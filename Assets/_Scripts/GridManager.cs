@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace _Scripts
 {
@@ -11,22 +12,24 @@ namespace _Scripts
         public Unit[,] Units { get; set; }
         private int Rows;
         private int Columns;
-        private int SideLength;
+        public int SideLength { get; private set; }
         private int UnitCounter;
         public bool isActive { get; set; }
+        public int GridState { get; set; } = 0;// 0 - Nothing, 1 - Game, 2 - Pause, 3 - Game over
 
         #region Start Game and Creating new units
-        
-        
+
+
         public void InitializeGrid(int sideLength)
         {
             GameManager.GameOver = false;
+            SideLength = sideLength;
             Data.Score = 0;
             GameManager.UpdateScoreText();
-            SideLength = sideLength;
             Data.MaxValue = SideLength - 1;
             Data.CurrentLayout = Data.layouts[SideLength];
             isActive = true;
+            GridState = 1;
             Rows = Columns = sideLength;
             Units = new Unit[Rows, Columns];
             UnitCounter = 0;
@@ -35,6 +38,45 @@ namespace _Scripts
             CreateNewUnit(canCreateSeveralUnits: true);
             LastUnitsState = new int[Rows, Columns];
             LastLastUnitsState = new int[Rows, Columns];
+            
+            for (int i = 0; i < SideLength; i++)
+            {
+                for (int j = 0; j < SideLength; j++)
+                {
+                    GameManager.CurrentLocalData.GridState[SideLength - 3][i][j] = Units[i, j]?.Value ?? 0;
+                }
+            }
+            GameManager.CurrentLocalData.StateIsSaved[sideLength - 3] = true;
+            LocalDataManager.WriteLocalData(GameManager.CurrentLocalData);
+        }
+
+        public void InitializeGridFromLocalData(int sideLength)
+        {
+            SideLength = sideLength;
+            GameManager.GameOver = false;
+            Data.Score = GameManager.CurrentLocalData.LastScores[sideLength - 3];
+            GameManager.UpdateScoreText();
+            Data.MaxValue = SideLength - 1;
+            Data.CurrentLayout = Data.layouts[SideLength];
+            isActive = true;
+            GridState = 1;
+            Rows = Columns = sideLength;
+            Units = new Unit[Rows, Columns];
+            Drawer.SetMapImagesBySize(SideLength);
+            LastUnitsState = new int[Rows, Columns];
+            LastLastUnitsState = new int[Rows, Columns];
+
+            UnitCounter = 0;
+            for (int i = 0; i < Rows; i++)
+            {
+                for (int j = 0; j < Columns; j++)
+                {
+                    if (GameManager.CurrentLocalData.GridState[sideLength-3][i][j] != 0)
+                        CreateNewUnit(i, j, GameManager.CurrentLocalData.GridState[sideLength-3][i][j], true);
+                }
+            }
+
+            CanUndo = false;
         }
 
         public GameObject UnitPrefab;
@@ -96,6 +138,7 @@ namespace _Scripts
                     //Debug.Log("Game Over");
                     GameManager.GameOver = true;
                     isActive = false;
+                    GridState = 3;
                 }
             });
         }
@@ -164,6 +207,29 @@ namespace _Scripts
         {
             CanCreateNewUnit = true;
             SaveCellsState();
+
+
+            /*
+            if (LastMove)
+            {
+                GameManager.CurrentLocalData.LastScores[SideLength - 3] = Data.Score;
+                if (Data.Score > GameManager.CurrentLocalData.BestScores[SideLength - 3])
+                {
+                    GameManager.CurrentLocalData.BestScores[SideLength - 3] = Data.Score;
+                }
+
+                for (int i = 0; i < SideLength; i++)
+                {
+                    for (int j = 0; j < SideLength; j++)
+                    {
+                        GameManager.CurrentLocalData.GridState[SideLength - 3][i][j] = Units[i, j]?.Value ?? 0;
+                    }
+                }
+                LocalDataManager.WriteLocalData(GameManager.CurrentLocalData);
+
+            }
+            */
+
             LastMove = false;
             switch (side)
             {
@@ -216,11 +282,29 @@ namespace _Scripts
 
                     break;
             }
+            
+            
 
             if (!LastMove) return;
             CanUndo = true;
             CreateNewUnit();
             if (UnitCounter == SideLength * SideLength) CheckTheEnd();
+            
+            
+            GameManager.CurrentLocalData.LastScores[SideLength - 3] = Data.Score;
+            if (Data.Score > GameManager.CurrentLocalData.BestScores[SideLength - 3])
+            {
+                GameManager.CurrentLocalData.BestScores[SideLength - 3] = Data.Score;
+            }
+
+            for (int i = 0; i < SideLength; i++)
+            {
+                for (int j = 0; j < SideLength; j++)
+                {
+                    GameManager.CurrentLocalData.GridState[SideLength - 3][i][j] = Units[i, j]?.Value ?? 0;
+                }
+            }
+            LocalDataManager.WriteLocalData(GameManager.CurrentLocalData);
         }
 
         public bool MoveUnit(Unit unit, int side)
