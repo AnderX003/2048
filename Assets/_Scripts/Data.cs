@@ -21,13 +21,13 @@ namespace _Scripts
                 new Color32(160, 99, 219, 255),
                 new Color32(57, 204, 143, 255),
                 new Color32(255, 127, 30, 255),
-                new Color32(80, 124, 137, 255),
+                new Color32(0, 151, 136, 255),
                 new Color32(255, 65, 129, 255),
                 new Color32(114, 137, 217, 255),
                 new Color32(76, 176, 80, 255),
                 new Color32(255, 86, 71, 255),
                 new Color32(255, 204, 0, 255),
-                new Color32(0, 151, 136, 255),
+                new Color32(80, 124, 137, 255),
                 new Color32(60, 90, 154, 255),
                 new Color32(254, 87, 34, 255),
             },
@@ -53,15 +53,16 @@ namespace _Scripts
             {
                 new Color32(61, 58, 51, 255),
                 new Color32(238, 228, 218, 255),
-                new Color32(237, 224, 200, 255),
-                new Color32(242, 177, 121, 255),
-                new Color32(246, 124, 95, 255),
-                new Color32(246, 94, 59, 255),
-                new Color32(237, 207, 114, 255),
-                new Color32(237, 204, 97, 255),
-                new Color32(237, 200, 80, 255),
+                new Color32(238, 225, 206, 255),
+                new Color32(244, 178, 126, 255),
+                new Color32(246, 151, 107, 255),
+                new Color32(247, 126, 105, 255),
+                new Color32(247, 97, 72, 255),
+                new Color32(238, 214, 144, 255),
+                new Color32(238, 211, 132, 255),
                 new Color32(237, 197, 63, 255),
-                new Color32(237, 194, 46, 255)
+                new Color32(236, 200, 79,255),
+                new Color32(236, 204, 95, 255)
             },
             new[]
             {
@@ -114,11 +115,12 @@ namespace _Scripts
         public static Color32[,] UIColors { get; } =
         {
             {
-                new Color32(38, 38, 38, 255),
-                new Color32(104, 104, 104, 255),
-                new Color32(255, 255, 255, 255),
-                new Color32(55, 55, 55, 255),
-                new Color32(255, 255, 255, 255)
+                new Color32(38, 38, 38, 255),//MaterialBackground
+                new Color32(104, 104, 104, 255),//MaterialForeground
+                new Color32(255, 255, 255, 255),//MaterialText
+                new Color32(55, 55, 55, 255),//MaterialUI
+                new Color32(255, 255, 255, 255),//MaterialCellText
+                new Color32(255, 255, 255, 255),// Text 2048
             },
 
             {
@@ -126,7 +128,8 @@ namespace _Scripts
                 new Color32(197, 197, 197, 255),
                 new Color32(127, 127, 127, 255),
                 new Color32(225, 225, 225, 255),
-                new Color32(255, 255, 255, 255)
+                new Color32(255, 255, 255, 255),
+                new Color32(127, 127, 127, 255)
             },
 
             {
@@ -134,7 +137,8 @@ namespace _Scripts
                 new Color32(189, 176, 160, 255),
                 new Color32(250, 245, 240, 255),
                 new Color32(164, 147, 129, 255),
-                new Color32(249, 246, 241, 255)
+                new Color32(249, 246, 241, 255),
+                new Color32(164, 147, 129, 255)
             },
 
             {
@@ -142,7 +146,8 @@ namespace _Scripts
                 new Color32(197, 197, 197, 255),
                 new Color32(127, 127, 127, 255),
                 new Color32(225, 225, 225, 255),
-                new Color32(255, 255, 255, 255)
+                new Color32(255, 255, 255, 255),
+                new Color32(127, 127, 127, 255)
             },
 
             {
@@ -150,7 +155,8 @@ namespace _Scripts
                 new Color32(58, 58, 58, 255),
                 new Color32(128, 128, 128, 255),
                 new Color32(20, 20, 20, 255),
-                new Color32(0, 0, 0, 255)
+                new Color32(0, 0, 0, 255),
+                new Color32(128, 128, 128, 255)
             }
         };
 

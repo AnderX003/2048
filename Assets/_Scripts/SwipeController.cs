@@ -15,10 +15,10 @@ namespace _Scripts
 
         private void Update()
         {
-            if (Enabled)
-            {
-                SwipeLeft = SwipeRight = SwipeUp = SwipeDown = false;
+            if (!Enabled) return;
+            SwipeLeft = SwipeRight = SwipeUp = SwipeDown = false;
 
+            /*
                 #region PC Inputs
 
                 if (Input.GetMouseButtonDown(0))
@@ -33,51 +33,52 @@ namespace _Scripts
                 }
 
                 #endregion
+                */
 
-                #region Mobile Inputs
+            #region Mobile Inputs
 
-                if (Input.touches.Length != 0)
+            if (Input.touches.Length != 0)
+            {
+                switch (Input.touches[0].phase)
                 {
-                    if (Input.touches[0].phase == TouchPhase.Began)
-                    {
+                    case TouchPhase.Began:
                         isDragging = true;
                         StartTouch = Input.touches[0].position;
-                    }
-                    else if (Input.touches[0].phase == TouchPhase.Ended ||
-                             Input.touches[0].phase == TouchPhase.Canceled)
-                    {
+                        break;
+                    case TouchPhase.Ended:
+                    case TouchPhase.Canceled:
                         isDragging = false;
                         Reset();
-                    }
+                        break;
                 }
+            }
 
-                #endregion
+            #endregion
 
-                // Calculating the distance
-                SwipeDelta = Vector2.zero;
-                if (isDragging)
+            // Calculating the distance
+            SwipeDelta = Vector2.zero;
+            if (isDragging)
+            {
+                if (Input.touches.Length > 0) SwipeDelta = Input.touches[0].position - StartTouch;
+                else if (Input.GetMouseButton(0)) SwipeDelta = (Vector2) Input.mousePosition - StartTouch;
+            }
+
+            // Making a swipe
+            if (SwipeDelta.magnitude > Sensitivity)
+            {
+                float x = SwipeDelta.x, y = SwipeDelta.y;
+                if (Mathf.Abs(x) > Mathf.Abs(y))
                 {
-                    if (Input.touches.Length > 0) SwipeDelta = Input.touches[0].position - StartTouch;
-                    else if (Input.GetMouseButton(0)) SwipeDelta = (Vector2) Input.mousePosition - StartTouch;
+                    if (x < 0) SwipeLeft = true;
+                    else SwipeRight = true;
                 }
-
-                // Making a swipe
-                if (SwipeDelta.magnitude > Sensitivity)
+                else
                 {
-                    float x = SwipeDelta.x, y = SwipeDelta.y;
-                    if (Mathf.Abs(x) > Mathf.Abs(y))
-                    {
-                        if (x < 0) SwipeLeft = true;
-                        else SwipeRight = true;
-                    }
-                    else
-                    {
-                        if (y < 0) SwipeDown = true;
-                        else SwipeUp = true;
-                    }
-
-                    Reset();
+                    if (y < 0) SwipeDown = true;
+                    else SwipeUp = true;
                 }
+
+                Reset();
             }
         }
 

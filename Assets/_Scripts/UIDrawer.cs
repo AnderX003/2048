@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
@@ -6,49 +7,65 @@ namespace _Scripts
 {
     public class UIDrawer : MonoBehaviour
     {
-        public GridManager Grid;
+        [SerializeField] private GridManager Grid;
+        [SerializeField] private Vector3 hidePosition;
 
         #region Unit drawing
 
         
         public void DrawNewUnit(Unit unit)
         {
-            float scale = Data.CellSizes[Data.MaxValue + 1];
-            unit.UnitRectTransform.localPosition = new Vector2(Data.CurrentLayout[unit.PositionX, unit.PositionY, 0],
+            //Debug.Log($"new {unit.PositionX} {unit.PositionY}");
+                //DOTween.Kill(unit);
+            //position
+            unit.UnitRectTransform.localPosition = new Vector3(
+                Data.CurrentLayout[unit.PositionX, unit.PositionY, 0],
                 Data.CurrentLayout[unit.PositionX, unit.PositionY, 1]);
+            
+            //sizes
             unit.UnitRectTransform.sizeDelta = new Vector3(0, 0, 1);
+            float scale = Data.CellSizes[Data.MaxValue + 1];
             unit.UnitRectTransform.DOSizeDelta(new Vector3(scale, scale, 1), 0.5f).SetEase(Ease.OutQuint);
             unit.UnitText.fontSize = Data.CellTextSizes[Data.MaxValue + 1];
             unit.TextObject.transform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutQuint);
-
-            UpdateUnit(unit);
+            
+            //color and text
+            unit.UnitText.text = unit.Value.ToString();
+            unit.UnitImage.color = Data.GetColorByValue(unit.Value);
+            if (Data.CurrentTheme == 2 && (unit.Value == 2 || unit.Value == 4))
+                unit.UnitText.color = new Color32(119, 110, 101, 255);
         }
 
-        public void UpdateUnit(Unit unit, bool beforeDeath = false, bool createNewUnit = false)
+        public void UpdateUnit(Unit unit, bool beforeDeath = false, Queue<Unit> pool = null)
         {
+            /*unit.UnitRectTransform.localPosition = new Vector3(
+                Data.CurrentLayout[unit.PositionX, unit.PositionY, 0],
+                Data.CurrentLayout[unit.PositionX, unit.PositionY, 1]);*/
             unit.transform.DOLocalMove(new Vector3(Data.CurrentLayout[unit.PositionX, unit.PositionY, 0],
-                Data.CurrentLayout[unit.PositionX, unit.PositionY, 1], 1), 0.1f).SetEase(Ease.InSine).OnComplete(() =>
+                Data.CurrentLayout[unit.PositionX, unit.PositionY, 1]), 0.1f).SetEase(Ease.InSine).OnComplete(() =>
             {
-                //Manager.CellsMovesIsEnd = true;
-                if (beforeDeath) Destroy(unit.gameObject);
-                if (createNewUnit)
+                if (beforeDeath)
                 {
-                    //Grid.CanUndo = true;
-                    Grid.CreateNewUnit();
-                    
-                }
+                    pool.Enqueue(unit);
+                    HideUnit(unit);
+                }//Destroy(unit.gameObject);
             });
             unit.UnitText.text = unit.Value.ToString();
+            if (Data.CurrentTheme == 2 && unit.Value == 8) unit.UnitText.color = new Color32(255, 255, 255, 255);
             unit.UnitImage.DOColor(Data.GetColorByValue(unit.Value), 1 / 3f);
         }
-        
+
         public void IncrementUnit(Unit unit)
         {       
             unit.transform.SetAsLastSibling();
             unit.transform.DOPunchScale(Vector3.one * 0.15f, 0.3f, 0, 0).SetEase(Ease.InOutExpo);
-            //MainMap.DeleteCells.Add(dying);
             UpdateUnit(unit);
-            //StartCoroutine(WaitForCellToBeReadyToDeath(dying));
+        }
+
+        public void HideUnit(Unit unit)
+        {
+            //Debug.Log($"Hide {unit.PositionX} {unit.PositionY}");
+            unit.transform.position = hidePosition;
         }
         
         #endregion
@@ -70,13 +87,7 @@ namespace _Scripts
             Foreground5,
             Foreground6,
             Foreground7,
-            Foreground8;/*,
-            CellImage3,
-            CellImage4,
-            CellImage5,
-            CellImage6,
-            CellImage7,
-            CellImage8;*/
+            Foreground8;
 
         public void SetMapImagesBySize(int side)
         {
@@ -137,7 +148,7 @@ namespace _Scripts
         
         #region Change Theme
 
-        public Material MaterialBackground, MaterialForeground, MaterialText, MaterialUI, MaterialCellText;
+        [SerializeField] private List<Material> Materials;
 
         public void ChangeTheme()
         {
@@ -146,11 +157,10 @@ namespace _Scripts
                     if (unit != null)
                         unit.UnitImage.color = Data.GetColorByValue(unit.Value);
 
-            MaterialBackground.DOColor(Data.UIColors[Data.CurrentTheme, 0], 1 / 3f);
-            MaterialForeground.DOColor(Data.UIColors[Data.CurrentTheme, 1], 1 / 3f);
-            MaterialText.DOColor(Data.UIColors[Data.CurrentTheme, 2], 1 / 3f);
-            MaterialUI.DOColor(Data.UIColors[Data.CurrentTheme, 3], 1 / 3f);
-            MaterialCellText.DOColor(Data.UIColors[Data.CurrentTheme, 4], 1 / 3f);
+            for (int i = 0; i < Materials.Count; i++)
+            {
+                Materials[i].DOColor(Data.UIColors[Data.CurrentTheme, i], 1 / 3f);
+            }
         }
 
         #endregion

@@ -14,6 +14,9 @@
 /Assets/_Trash
 /Assets/Plugins
 /Assets/Resources
+/Assets/ExternalDependencyManager
+/Assets/GooglePlayGames
+/Assets/GPGSIds.cs
 
 *.meta
 *.sln
