@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -12,7 +13,7 @@ namespace _Scripts
         [SerializeField] private GameManager GameManager;
         [SerializeField] private UIDrawer drawer;
         [SerializeField] private List<Unit> startUnits;
-        private Queue<Unit> unitsPool = new Queue<Unit>();
+        private readonly Queue<Unit> unitsPool = new Queue<Unit>();
 
         public Unit[,] Units { get; private set; }
         public UIDrawer Drawer => drawer;
@@ -21,8 +22,9 @@ namespace _Scripts
         private int Columns;
         public int SideLength { get; private set; }
         private int UnitCounter;
-        public bool isActive { get; set; }
-        public int GridState { get; set; } = 0; // 0 - Nothing, 1 - Game, 2 - Pause, 3 - Game over
+        public bool IsActive { get; set; }
+        public bool MoveIsOver { get; private set; } = true;
+        public GridState State { get; set; } // 0 - Nothing, 1 - Game, 2 - Pause, 3 - Game over
 
         #region Start Game and Creating new units
 
@@ -36,14 +38,13 @@ namespace _Scripts
 
         public void InitializeGrid(int sideLength)
         {
-            GameManager.GameOver = false;
             SideLength = sideLength;
             Data.Score = 0;
             GameManager.UpdateScoreText();
             Data.MaxValue = SideLength - 1;
             Data.CurrentLayout = Data.layouts[SideLength];
-            isActive = true;
-            GridState = 1;
+            IsActive = true;
+            State = GridState.Game;
             Rows = Columns = sideLength;
             Units = new Unit[Rows, Columns];
             UnitCounter = 0;
@@ -55,21 +56,15 @@ namespace _Scripts
             GameManager.CurrentLocalData.StateIsSaved[sideLength - 3] = true;
         }
 
-        private void Update()
-        {
-            //Debug.Log(UnitCounter + "              "+unitsPool.Count);
-        }
-
         public void InitializeGridFromLocalData(int sideLength)
         {
             SideLength = sideLength;
-            GameManager.GameOver = false;
             Data.Score = GameManager.CurrentLocalData.LastScores[sideLength - 3];
             GameManager.UpdateScoreText();
             Data.MaxValue = SideLength - 1;
             Data.CurrentLayout = Data.layouts[SideLength];
-            isActive = true;
-            GridState = 1;
+            IsActive = true;
+            State = GridState.Game;
             Rows = Columns = sideLength;
             Units = new Unit[Rows, Columns];
             Drawer.SetMapImagesBySize(SideLength);
@@ -91,7 +86,7 @@ namespace _Scripts
 
         [SerializeField] private GameObject UnitPrefab;
 
-        private void CreateNewUnit(int posX = -1, int posY = -1, int value = -1, bool canCreateSeveralUnits = false)
+        private void CreateNewUnit(int posX = -1, int posY = -1, int value = -1, bool canCreateSeveralUnits = false, bool withDelay=false)
         {
             if (UnitCounter == Rows * Columns) return;
             if (!canCreateSeveralUnits)
@@ -118,9 +113,16 @@ namespace _Scripts
                 positionY = posY;
             }
 
-            Unit unit = unitsPool.Count > 0
-                ? unitsPool.Dequeue() 
-                : Instantiate(UnitPrefab, MapGameObject).GetComponent<Unit>();
+            Unit unit;
+            if (unitsPool.Count > 0)
+            {
+                unit = unitsPool.Dequeue();
+            }
+            else
+            {
+                unit = Instantiate(UnitPrefab, MapGameObject).GetComponent<Unit>();
+                Drawer.HideUnit(unit);
+            }
 
             Units[positionX, positionY] = unit;
             unit.PositionX = positionX;
@@ -128,7 +130,16 @@ namespace _Scripts
             int[] arr = {2, 2, 2, 4};
             unit.Value = value == -1 ? arr[Random.Range(0, 4)] : value;
             UnitCounter++;
-            Drawer.DrawNewUnit(unit);
+            if (withDelay)
+            {
+                MoveIsOver = false;
+                StartCoroutine(InvokeWithDelay(Drawer.MoveDuration, () =>
+                {
+                    Drawer.DrawNewUnit(unit);
+                    MoveIsOver = true;
+                }));
+            }
+            else Drawer.DrawNewUnit(unit);
         }
 
         #endregion
@@ -137,68 +148,60 @@ namespace _Scripts
 
         private async void CheckTheEnd()
         {
-            await Task.Run(() =>
+            bool gameOver = await Task.Run(() =>
             {
                 bool[,] checkedList = new bool[Rows, Columns];
                 if (!CheckTheEnd(Units[1, 1], checkedList))
                 {
-                    ////Debug.Log("Game Over");
-                    GameManager.GameOver = true;
-                    isActive = false;
-                    GridState = 3;
+                    IsActive = false;
+                    State = GridState.GameOver;
+                    return true;
                 }
+
+                return false;
             });
+            if (gameOver) GameManager.GameOverMethod();
         }
 
         private bool CheckTheEnd(Unit startUnit, bool[,] checkedUnits)
         {
             int x = startUnit.PositionX;
             int y = startUnit.PositionY;
-            ////Debug.Log(x + "\t" + y);
             if (x != Rows - 1 &&
                 checkedUnits[x + 1, y] == false &&
-                //!Contains(CheckedList, Units[startCell.PositionX + 1, startCell.PositionY]) &&
                 Units[x + 1, y].Value == startUnit.Value
                 ||
                 x != 0 &&
                 checkedUnits[x - 1, y] == false &&
-                //!Contains(CheckedList, Units[startCell.PositionX - 1, startCell.PositionY])&&
                 Units[x - 1, y].Value == startUnit.Value
                 ||
                 y != Columns - 1 &&
                 checkedUnits[x, y + 1] == false &&
-                //!Contains(CheckedList, Units[startCell.PositionX, startCell.PositionY + 1])&&
                 Units[x, y + 1].Value == startUnit.Value
                 ||
                 y != 0 &&
                 checkedUnits[x, y - 1] == false &&
-                //!Contains(CheckedList, Units[startCell.PositionX, startCell.PositionY - 1])&&
                 Units[x, y - 1].Value == startUnit.Value)
             {
                 return true;
             }
 
-            //CheckedList.Add(startCell);
             checkedUnits[x, y] = true;
             return
                 x != Rows - 1 &&
                 checkedUnits[x + 1, y] == false &&
-                //!Contains(CheckedList, Units[startCell.PositionX + 1, startCell.PositionY]) &&
                 CheckTheEnd(Units[x + 1, y], checkedUnits)
                 ||
                 x != 0 &&
                 checkedUnits[x - 1, y] == false &&
-                //!Contains(CheckedList, Units[startCell.PositionX - 1, startCell.PositionY]) &&
                 CheckTheEnd(Units[x - 1, y], checkedUnits)
                 ||
                 y != Columns - 1 &&
                 checkedUnits[x, y + 1] == false &&
-                //!Contains(CheckedList, Units[startCell.PositionX, startCell.PositionY + 1]) &&
                 CheckTheEnd(Units[x, y + 1], checkedUnits)
                 ||
                 y != 0 &&
                 checkedUnits[x, y - 1] == false &&
-                //!Contains(CheckedList, Units[startCell.PositionX, startCell.PositionY - 1]) &&
                 CheckTheEnd(Units[x, y - 1], checkedUnits);
         }
 
@@ -268,7 +271,7 @@ namespace _Scripts
 
             if (!LastMove) return;
             CanUndo = true;
-            CreateNewUnit();
+            CreateNewUnit(withDelay:true);
             if (UnitCounter == SideLength * SideLength) CheckTheEnd();
 
             GameManager.CurrentLocalData.LastScores[SideLength - 3] = Data.Score;
@@ -277,6 +280,14 @@ namespace _Scripts
                 GameManager.CurrentLocalData.BestScores[SideLength - 3] = Data.Score;
                 BestsWasChanged = true;
             }
+        }
+        
+        public static IEnumerator InvokeWithDelay(float delay, Action action)
+        {
+            if(action == null)
+                yield break;
+            yield return new WaitForSeconds(delay);
+            action();
         }
 
         private bool MoveUnit(Unit unit, int side)
@@ -416,11 +427,9 @@ namespace _Scripts
 
         public void SaveDataToCloudAndToLocalMemory()
         {
-            //Debug.Log("SaveDataToCloudAndToLocalMemory");
             SaveGridStateToLocalData();
             LocalDataManager.WriteLocalData(GameManager.CurrentLocalData);
             if (!BestsWasChanged) return;
-            //Debug.Log("Saving data to cloud");
             AddScoreToLeaderboard(SideLength, GameManager.CurrentLocalData.BestScores[SideLength - 3]);
             GPGSManager.WriteDataToCloud(GameManager.dataName,
                 Converter.ToByteArray(GameManager.CurrentLocalData.BestScores));
@@ -446,6 +455,7 @@ namespace _Scripts
                 2048 => GPGSIds.achievement_2048,
                 4096 => GPGSIds.achievement_4096,
                 8192 => GPGSIds.achievement_8192,
+                16384 => GPGSIds.achievement_16384,
                 _ => null
             };
             GPGSManager.UnlockAchievement(id);
@@ -473,7 +483,7 @@ namespace _Scripts
         private bool CanUndo { get; set; }
         private bool LastMove = true;
         
-        private int LastScore, LastLastScore;
+        private int LastScore;
         private int[,] LastUnitsState;
         private int[,] LastLastUnitsState;
 
@@ -490,7 +500,6 @@ namespace _Scripts
                 }
             }
 
-            LastLastScore = LastScore;
             LastScore = Data.Score;
         }
 
@@ -523,7 +532,7 @@ namespace _Scripts
                         unitsPool.Enqueue(Units[i, j]);
                         drawer.HideUnit(Units[i, j]);
                         Units[i, j] = null;
-                    } //Destroy(Units[i, j].gameObject);
+                    }
                 }
             }
 
@@ -531,5 +540,13 @@ namespace _Scripts
         }
 
         #endregion
+    }
+
+    public enum GridState
+    {
+        Nothing,
+        Game,
+        Pause,
+        GameOver
     }
 }

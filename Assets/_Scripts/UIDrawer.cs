@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
@@ -9,14 +10,16 @@ namespace _Scripts
     {
         [SerializeField] private GridManager Grid;
         [SerializeField] private Vector3 hidePosition;
-
+        [SerializeField] private Ease moveEase;
+        [SerializeField] private Ease appearanceEase;
+        [SerializeField] private Ease punchEase;
+        [SerializeField] private float moveDuration;
+        public float MoveDuration => moveDuration;
         #region Unit drawing
 
         
         public void DrawNewUnit(Unit unit)
         {
-            //Debug.Log($"new {unit.PositionX} {unit.PositionY}");
-                //DOTween.Kill(unit);
             //position
             unit.UnitRectTransform.localPosition = new Vector3(
                 Data.CurrentLayout[unit.PositionX, unit.PositionY, 0],
@@ -25,30 +28,26 @@ namespace _Scripts
             //sizes
             unit.UnitRectTransform.sizeDelta = new Vector3(0, 0, 1);
             float scale = Data.CellSizes[Data.MaxValue + 1];
-            unit.UnitRectTransform.DOSizeDelta(new Vector3(scale, scale, 1), 0.5f).SetEase(Ease.OutQuint);
+            unit.UnitRectTransform.DOSizeDelta(new Vector3(scale, scale, 1), 0.5f).SetEase(appearanceEase);
             unit.UnitText.fontSize = Data.CellTextSizes[Data.MaxValue + 1];
-            unit.TextObject.transform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutQuint);
+            unit.TextObject.transform.DOScale(Vector3.one, 0.5f).SetEase(appearanceEase/*Ease.OutQuint*/);
             
             //color and text
             unit.UnitText.text = unit.Value.ToString();
             unit.UnitImage.color = Data.GetColorByValue(unit.Value);
             if (Data.CurrentTheme == 2 && (unit.Value == 2 || unit.Value == 4))
                 unit.UnitText.color = new Color32(119, 110, 101, 255);
+            else unit.UnitText.color = Color.white;
         }
 
         public void UpdateUnit(Unit unit, bool beforeDeath = false, Queue<Unit> pool = null)
         {
-            /*unit.UnitRectTransform.localPosition = new Vector3(
-                Data.CurrentLayout[unit.PositionX, unit.PositionY, 0],
-                Data.CurrentLayout[unit.PositionX, unit.PositionY, 1]);*/
             unit.transform.DOLocalMove(new Vector3(Data.CurrentLayout[unit.PositionX, unit.PositionY, 0],
-                Data.CurrentLayout[unit.PositionX, unit.PositionY, 1]), 0.1f).SetEase(Ease.InSine).OnComplete(() =>
+                Data.CurrentLayout[unit.PositionX, unit.PositionY, 1]), moveDuration).SetEase(moveEase/*Ease.InSine*/).OnComplete(() =>
             {
-                if (beforeDeath)
-                {
-                    pool.Enqueue(unit);
-                    HideUnit(unit);
-                }//Destroy(unit.gameObject);
+                if (!beforeDeath) return;
+                pool?.Enqueue(unit);
+                HideUnit(unit);
             });
             unit.UnitText.text = unit.Value.ToString();
             if (Data.CurrentTheme == 2 && unit.Value == 8) unit.UnitText.color = new Color32(255, 255, 255, 255);
@@ -58,13 +57,12 @@ namespace _Scripts
         public void IncrementUnit(Unit unit)
         {       
             unit.transform.SetAsLastSibling();
-            unit.transform.DOPunchScale(Vector3.one * 0.15f, 0.3f, 0, 0).SetEase(Ease.InOutExpo);
+            unit.transform.DOPunchScale(Vector3.one * 0.15f, 0.3f, 0, 0).SetEase(punchEase/*Ease.InOutExpo*/);
             UpdateUnit(unit);
         }
 
         public void HideUnit(Unit unit)
         {
-            //Debug.Log($"Hide {unit.PositionX} {unit.PositionY}");
             unit.transform.position = hidePosition;
         }
         
@@ -74,6 +72,7 @@ namespace _Scripts
 
         public Image ForegroundImage;
         public RectTransform BackgroundImageTransform;
+        public RectTransform BackgroundGameOverImageTransform;
 
         public Sprite
             Background3,
@@ -126,8 +125,10 @@ namespace _Scripts
                     break;
             }
 
+            BackgroundGameOverImageTransform.sizeDelta = BackgroundImageTransform.sizeDelta;
+
             //ForegroundImage.sprite = Foregroungs[side];
-            switch (side)
+            /*switch (side)
             {
                 case 3:
                     break;
@@ -141,7 +142,7 @@ namespace _Scripts
                     break;
                 case 8:
                     break;
-            }
+            }*/
         }
 
         #endregion

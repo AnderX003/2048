@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,10 +10,8 @@ namespace _Scripts
 
         public static GameManager Instance { get;private set; }
         public LocalData CurrentLocalData { get; set; }
-        public bool GameOver { get; set; }
         
         [SerializeField] private GridManager GridManager;
-        [SerializeField] private RectTransform ControlButtons, MenuPanel, GameOverPanel;
         [SerializeField] private SwipeController Controller;
         [SerializeField] private Text ScoreText, BestScoreText;
         [SerializeField] private MessageBoxController messageBoxController;
@@ -43,21 +40,23 @@ namespace _Scripts
 
         private void Update()
         {
-            if (GameOver)
+            if (GridManager.IsActive && GridManager.MoveIsOver)
             {
-                GameOverMethod();
-                GameOver = false;
+#if UNITY_ANDROID
+                if (Controller.SwipeRight) GridManager.Turn(0);
+                else if (Controller.SwipeUp) GridManager.Turn(1);
+                else if (Controller.SwipeLeft) GridManager.Turn(2);
+                else if (Controller.SwipeDown) GridManager.Turn(3);
+#endif
+#if UNITY_EDITOR
+                if (Input.GetKeyUp(KeyCode.RightArrow)) GridManager.Turn(0);
+                else if (Input.GetKeyUp(KeyCode.UpArrow)) GridManager.Turn(1);
+                else if (Input.GetKeyUp(KeyCode.LeftArrow)) GridManager.Turn(2);
+                else if (Input.GetKeyUp(KeyCode.DownArrow)) GridManager.Turn(3);
+#endif
             }
 
-            if (GridManager.isActive)
-            {
-                if (Controller.SwipeRight || Input.GetKeyUp(KeyCode.RightArrow)) GridManager.Turn(0);
-                if (Controller.SwipeUp || Input.GetKeyUp(KeyCode.UpArrow)) GridManager.Turn(1);
-                if (Controller.SwipeLeft || Input.GetKeyUp(KeyCode.LeftArrow)) GridManager.Turn(2);
-                if (Controller.SwipeDown || Input.GetKeyUp(KeyCode.DownArrow)) GridManager.Turn(3);
-            }
-
-            Controller.Enabled = GridManager.isActive;
+            Controller.Enabled = GridManager.IsActive;
         }
 
         public void UpdateScoreText()
@@ -67,12 +66,12 @@ namespace _Scripts
                 BestScoreText.text = Data.Score.ToString();
         }
 
-        private void GameOverMethod()
+        [SerializeField] private Animator gamePanelAnimator;
+        private static readonly int In = Animator.StringToHash("In");
+        private static readonly int Out = Animator.StringToHash("Out");
+        public void GameOverMethod()
         {
-            //ControlButtons.gameObject.SetActive(false);
-            ControlButtons.localPosition = new Vector3(1500, 0,0);
-            //GameOverPanel.gameObject.SetActive(true);
-            GameOverPanel.localPosition = Vector3.zero;
+            gamePanelAnimator.SetTrigger(In);
             CurrentLocalData.StateIsSaved[GridManager.SideLength - 3] = false;
             if (Data.Score > CurrentLocalData.BestScores[GridManager.SideLength - 3])
                 CurrentLocalData.BestScores[GridManager.SideLength - 3] = Data.Score;
@@ -85,7 +84,7 @@ namespace _Scripts
             GridManager.SaveDataToCloudAndToLocalMemory();
             GridManager.ClearGrid();
             CurrentLocalData.StateIsSaved[CurrentLocalData.LastGameMode - 3] = false;
-                SetSizeAndStartGame(CurrentLocalData.LastGameMode);
+            SetSizeAndStartGame(CurrentLocalData.LastGameMode);
         }
 
         #endregion
@@ -94,45 +93,51 @@ namespace _Scripts
 
         public void ResumeGame()
         {
-            switch (GridManager.GridState)
+            switch (GridManager.State)
             {
-                case 0:
-                case 3:
-                    //MenuPanel.SetActive(false);
-                    MenuPanel.localPosition = new Vector3(1500, 0, 0);
+                case GridState.Nothing:
+                case GridState.GameOver:
                     SetSizeAndStartGame(CurrentLocalData.LastGameMode);
-                    GridManager.GridState = 1;
-                    GridManager.isActive = true;
+                    GridManager.State = GridState.Game;
+                    GridManager.IsActive = true;
                     break;
-                case 1:
-                case 2:
-                    //MenuPanel.SetActive(false);
-                    MenuPanel.localPosition = new Vector3(1500, 0, 0);
+                case GridState.Game:
+                case GridState.Pause:
                     SetMapState(true);
-                    GridManager.GridState = 1;
-                    GridManager.isActive = true;
+                    GridManager.State = GridState.Game;
+                    GridManager.IsActive = true;
                     break;
             }
         }
 
         public void Pause()
         {
-            GridManager.GridState = 2;
-            //MenuPanel.SetActive(true);
-            MenuPanel.localPosition = Vector3.zero;
-            GridManager.isActive = false;
-            GridManager.SaveDataToCloudAndToLocalMemory();
+            if (GridManager.State == GridState.GameOver)
+            {
+                gamePanelAnimator.SetTrigger(Out);
+                GridManager.State = GridState.Nothing;
+                StartCoroutine(GridManager.InvokeWithDelay(1 / 3f, ClearGrid));
+            }
+            else
+            {
+                GridManager.State = GridState.Game;
+                GridManager.IsActive = false;
+                GridManager.SaveDataToCloudAndToLocalMemory();
+            }
+        }
+
+        private void ClearGrid()
+        {
+            GridManager.ClearGrid();
         }
 
         public void SetMapState(bool state)
         {
-            //MainMap.isActive = state;
-            GridManager.isActive = state;
+            GridManager.IsActive = state;
         }
 
         public void SetSizeAndStartGame(int sideLenght)
         {
-            MenuPanel.localPosition = new Vector3(1500, 0, 0);
             CurrentLocalData.LastGameMode = sideLenght;
             if (FirstGameStarted)
                 GridManager.ClearGrid();
@@ -143,9 +148,6 @@ namespace _Scripts
                 FirstGameStarted = true;
                 BestScoreText.text = CurrentLocalData.BestScores[sideLenght - 3].ToString();
                 GridManager.InitializeGridFromLocalData(sideLenght);
-                //MenuPanel.SetActive(false);
-                MenuPanel.localPosition = new Vector3(1500, 0, 0);
-                //LocalDataManager.WriteLocalData(CurrentLocalData);
             }
             else
             {
@@ -155,37 +157,40 @@ namespace _Scripts
             }
         }
 
-        public void ReloadGrid()
-        {
-            //ControlButtons.gameObject.SetActive(true);
-            ControlButtons.localPosition = Vector3.zero;
-            //GameOverPanel.gameObject.SetActive(false);
-            GameOverPanel.localPosition = new Vector3(1500, 0, 0);
-            SetSizeAndStartGame(CurrentLocalData.LastGameMode);
-        }
-
         public void RestartButton()
         {
-            messageBoxController.OpenNewMessageBox(
-                () =>
-                {
-                    SetMapState(true);
-                    Restart();
-                },
-                () => { SetMapState(true); },
-                "Are you sure you want to restart?");
+            if (GridManager.State == GridState.GameOver)
+            {
+                gamePanelAnimator.SetTrigger(Out);
+                SetMapState(true);
+                Restart();
+            }
+            else
+                messageBoxController.OpenNewMessageBox(
+                    () =>
+                    {
+                        SetMapState(true);
+                        Restart();
+                    },
+                    () => { SetMapState(true); },
+                    "Are you sure you want to restart?");
         }
 
         public void Undo()
         {
+            if (GridManager.State == GridState.GameOver)
+            {
+                gamePanelAnimator.SetTrigger(Out);
+                GridManager.State = GridState.Game;
+                SetMapState(true);
+                CurrentLocalData.StateIsSaved[GridManager.SideLength - 3] = true;
+            }
+
             GridManager.SaveDataToCloudAndToLocalMemory();
             GridManager.Undo();
         }
 
-        public void TurnOnOffSound()
-        {
-
-        }
+        public void TurnOnOffSound() { }
 
         public void ChangeTheme(int next)
         {
@@ -211,7 +216,6 @@ namespace _Scripts
 
         [SerializeField] private Material uiMaterial, signedInMaterial;
         [SerializeField] private Image gpgsButtonImage;
-        private bool canSignInOrOut = true;
         public static string dataName => "bests";
 
         private void InitializeSignInOrOutGPGSButtonColor()
@@ -244,7 +248,6 @@ namespace _Scripts
             bool dataIsEmpty = dataInt.All(element => element == 0);
             if (!dataIsEmpty)
             {
-                //Debug.Log(dataInt.Aggregate("", (current, i) => current + (i + " ")));
                 CurrentLocalData.BestScores = dataInt;
                 LocalDataManager.WriteLocalData(CurrentLocalData);
             }
@@ -254,7 +257,6 @@ namespace _Scripts
                 if (!localDataIsEmpty) GPGSManager.WriteDataToCloud(dataName, Converter.ToByteArray(CurrentLocalData.BestScores));
             }
         }
-
 
         public void ShowAchievementsUI()
         {

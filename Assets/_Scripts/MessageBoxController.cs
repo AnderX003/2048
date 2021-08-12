@@ -6,32 +6,44 @@ namespace _Scripts
 {
     public class MessageBoxController : MonoBehaviour
     {
-        //[SerializeField] private GameObject MessageBoxPanel;
         [SerializeField] private RectTransform MessageBoxPanel;
+        [SerializeField] private Animator animator;
         [SerializeField] private Text questionText;
+        [SerializeField] private Vector3 hidePosition;
+        [SerializeField] private float outAnimDuration;
         private Action agreeAction, disagreeAction;
+        private static readonly int Any = Animator.StringToHash("Any");
 
         public void OpenNewMessageBox(Action agree, Action disagree, string question)
         {
             agreeAction = agree;
             disagreeAction = disagree;
             questionText.text = question;
-            //MessageBoxPanel.SetActive(true);
             MessageBoxPanel.localPosition = Vector3.zero;
+            animator.SetTrigger(Any);
         }
 
         public void Agree()
         {
             agreeAction();
-            //MessageBoxPanel.SetActive(false);
-            MessageBoxPanel.localPosition = new Vector3(1500,0,0);
+            Close();
         }
 
         public void Disagree()
         {
             disagreeAction();
-            //MessageBoxPanel.SetActive(false);
-            MessageBoxPanel.localPosition = new Vector3(1500,0,0);
+            Close();
+        }
+
+        private void Close()
+        {
+            animator.SetTrigger(Any);
+            Invoke(nameof(Hide), outAnimDuration);
+        }
+
+        private void Hide()
+        {
+            MessageBoxPanel.localPosition = hidePosition;
         }
     }
 }
