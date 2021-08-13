@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
@@ -42,18 +43,18 @@ namespace _Scripts
         {
             if (GridManager.IsActive && GridManager.MoveIsOver)
             {
-#if UNITY_ANDROID
+//#if UNITY_ANDROID
                 if (Controller.SwipeRight) GridManager.Turn(0);
                 else if (Controller.SwipeUp) GridManager.Turn(1);
                 else if (Controller.SwipeLeft) GridManager.Turn(2);
                 else if (Controller.SwipeDown) GridManager.Turn(3);
-#endif
+                /*#endif
 #if UNITY_EDITOR
                 if (Input.GetKeyUp(KeyCode.RightArrow)) GridManager.Turn(0);
                 else if (Input.GetKeyUp(KeyCode.UpArrow)) GridManager.Turn(1);
                 else if (Input.GetKeyUp(KeyCode.LeftArrow)) GridManager.Turn(2);
                 else if (Input.GetKeyUp(KeyCode.DownArrow)) GridManager.Turn(3);
-#endif
+#endif*/
             }
 
             Controller.Enabled = GridManager.IsActive;
@@ -99,11 +100,11 @@ namespace _Scripts
                 case GridState.GameOver:
                     SetSizeAndStartGame(CurrentLocalData.LastGameMode);
                     GridManager.State = GridState.Game;
-                    GridManager.IsActive = true;
+                    //GridManager.IsActive = true;
                     break;
                 case GridState.Game:
                 case GridState.Pause:
-                    SetMapState(true);
+                    GridManager.IsActive = true;
                     GridManager.State = GridState.Game;
                     GridManager.IsActive = true;
                     break;
@@ -131,12 +132,31 @@ namespace _Scripts
             GridManager.ClearGrid();
         }
 
-        public void SetMapState(bool state)
+        public void SetSizeAndResumeGame(int sideLenght)
         {
-            GridManager.IsActive = state;
+            //GridManager.IsActive = true;
+            switch (GridManager.State)
+            {
+                case GridState.GameOver:
+                case GridState.Nothing:
+                    SetSizeAndStartGame(sideLenght);
+                    break;
+                case GridState.Game:
+                case GridState.Pause:
+                    if (GridManager.SideLength == sideLenght)
+                    {
+                        GridManager.State = GridState.Game;
+                        GridManager.IsActive = true;
+                    }
+                    else SetSizeAndStartGame(sideLenght);
+
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
-        public void SetSizeAndStartGame(int sideLenght)
+        private void SetSizeAndStartGame(int sideLenght)
         {
             CurrentLocalData.LastGameMode = sideLenght;
             if (FirstGameStarted)
@@ -162,17 +182,17 @@ namespace _Scripts
             if (GridManager.State == GridState.GameOver)
             {
                 gamePanelAnimator.SetTrigger(Out);
-                SetMapState(true);
+                GridManager.IsActive = true;
                 Restart();
             }
             else
                 messageBoxController.OpenNewMessageBox(
                     () =>
                     {
-                        SetMapState(true);
+                        GridManager.IsActive = true;
                         Restart();
                     },
-                    () => { SetMapState(true); },
+                    () => { GridManager.IsActive = true; },
                     "Are you sure you want to restart?");
         }
 
@@ -182,7 +202,7 @@ namespace _Scripts
             {
                 gamePanelAnimator.SetTrigger(Out);
                 GridManager.State = GridState.Game;
-                SetMapState(true);
+                GridManager.IsActive = true;
                 CurrentLocalData.StateIsSaved[GridManager.SideLength - 3] = true;
             }
 

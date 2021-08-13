@@ -5,13 +5,21 @@ namespace _Scripts
     public class SwipeController : MonoBehaviour
     {
         private bool isDragging;
-        private Vector2 StartTouch, SwipeDelta;
-        public bool Enabled = true;
-        public float Sensitivity = 50;
+        private Vector2 startTouch, swipeDelta;
+        [SerializeField] private float sensitivity = 50;
+        [SerializeField] private int borderTop;
+        [SerializeField] private int borderBottom;
+        private int canvasHeight;
+        public bool Enabled { get; set; } = true;
         public bool SwipeRight { get; private set; }
         public bool SwipeUp { get; private set; }
         public bool SwipeLeft { get; private set; }
         public bool SwipeDown { get; private set; }
+
+        private void Start()
+        {
+            canvasHeight = Camera.main.pixelHeight;
+        }
 
         private void Update()
         {
@@ -43,7 +51,7 @@ namespace _Scripts
                 {
                     case TouchPhase.Began:
                         isDragging = true;
-                        StartTouch = Input.touches[0].position;
+                        startTouch = Input.touches[0].position;
                         break;
                     case TouchPhase.Ended:
                     case TouchPhase.Canceled:
@@ -56,17 +64,17 @@ namespace _Scripts
             #endregion
 
             // Calculating the distance
-            SwipeDelta = Vector2.zero;
+            swipeDelta = Vector2.zero;
             if (isDragging)
             {
-                if (Input.touches.Length > 0) SwipeDelta = Input.touches[0].position - StartTouch;
-                else if (Input.GetMouseButton(0)) SwipeDelta = (Vector2) Input.mousePosition - StartTouch;
+                if (Input.touches.Length > 0) swipeDelta = Input.touches[0].position - startTouch;
+                else if (Input.GetMouseButton(0)) swipeDelta = (Vector2) Input.mousePosition - startTouch;
             }
 
             // Making a swipe
-            if (SwipeDelta.magnitude > Sensitivity)
+            if (swipeDelta.magnitude > sensitivity)
             {
-                float x = SwipeDelta.x, y = SwipeDelta.y;
+                float x = swipeDelta.x, y = swipeDelta.y;
                 if (Mathf.Abs(x) > Mathf.Abs(y))
                 {
                     if (x < 0) SwipeLeft = true;
@@ -74,8 +82,14 @@ namespace _Scripts
                 }
                 else
                 {
-                    if (y < 0) SwipeDown = true;
-                    else SwipeUp = true;
+                    if (y < 0)
+                    {
+                        if (startTouch.y < canvasHeight - borderTop) SwipeDown = true;
+                    }
+                    else
+                    {
+                        if (startTouch.y > borderBottom) SwipeUp = true;
+                    }
                 }
 
                 Reset();
@@ -85,7 +99,7 @@ namespace _Scripts
         private void Reset()
         {
             isDragging = false;
-            StartTouch = SwipeDelta = Vector2.zero;
+            startTouch = swipeDelta = Vector2.zero;
         }
     }
 }

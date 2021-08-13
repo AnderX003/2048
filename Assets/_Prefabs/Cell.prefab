@@ -168,7 +168,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 21543831078043e4bbce6c5a080795bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  UnitRectTransform: {fileID: 4634763681696690429}
-  UnitImage: {fileID: 5136744723395632208}
-  TextObject: {fileID: 1582911333515069348}
-  UnitText: {fileID: 2955597997873938280}
+  unitRectTransform: {fileID: 4634763681696690429}
+  unitImage: {fileID: 5136744723395632208}
+  textObject: {fileID: 1582911333515069348}
+  unitText: {fileID: 2955597997873938280}

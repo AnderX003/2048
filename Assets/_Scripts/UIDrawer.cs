@@ -30,6 +30,7 @@ namespace _Scripts
             float scale = Data.CellSizes[Data.MaxValue + 1];
             unit.UnitRectTransform.DOSizeDelta(new Vector3(scale, scale, 1), 0.5f).SetEase(appearanceEase);
             unit.UnitText.fontSize = Data.CellTextSizes[Data.MaxValue + 1];
+            unit.TextObject.transform.localScale = Vector3.zero;
             unit.TextObject.transform.DOScale(Vector3.one, 0.5f).SetEase(appearanceEase/*Ease.OutQuint*/);
             
             //color and text
@@ -155,7 +156,7 @@ namespace _Scripts
         {
             if (Grid.Units != null)
                 foreach (Unit unit in Grid.Units)
-                    if (unit != null)
+                    if (!unit.IsEmpty)
                         unit.UnitImage.color = Data.GetColorByValue(unit.Value);
 
             for (int i = 0; i < Materials.Count; i++)
