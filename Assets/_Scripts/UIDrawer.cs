@@ -154,10 +154,10 @@ namespace _Scripts
 
         public void ChangeTheme()
         {
-            if (Grid.Units != null)
+            /*if (Grid.Units != null)
                 foreach (Unit unit in Grid.Units)
                     if (!unit.IsEmpty)
-                        unit.UnitImage.color = Data.GetColorByValue(unit.Value);
+                        unit.UnitImage.color = Data.GetColorByValue(unit.Value);*/
 
             for (int i = 0; i < Materials.Count; i++)
             {

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -16,7 +17,8 @@ namespace _Scripts
         [SerializeField] private SwipeController Controller;
         [SerializeField] private Text ScoreText, BestScoreText;
         [SerializeField] private MessageBoxController messageBoxController;
-        
+        [SerializeField] private Animator MenuAnimator;
+
         private bool FirstGameStarted;
 
         #endregion
@@ -43,20 +45,20 @@ namespace _Scripts
         {
             if (GridManager.IsActive && GridManager.MoveIsOver)
             {
-//#if UNITY_ANDROID
+#if UNITY_ANDROID
                 if (Controller.SwipeRight) GridManager.Turn(0);
                 else if (Controller.SwipeUp) GridManager.Turn(1);
                 else if (Controller.SwipeLeft) GridManager.Turn(2);
                 else if (Controller.SwipeDown) GridManager.Turn(3);
-                /*#endif
+                #endif
 #if UNITY_EDITOR
                 if (Input.GetKeyUp(KeyCode.RightArrow)) GridManager.Turn(0);
                 else if (Input.GetKeyUp(KeyCode.UpArrow)) GridManager.Turn(1);
                 else if (Input.GetKeyUp(KeyCode.LeftArrow)) GridManager.Turn(2);
                 else if (Input.GetKeyUp(KeyCode.DownArrow)) GridManager.Turn(3);
-#endif*/
+#endif
             }
-
+            if(Input.GetKeyDown(KeyCode.Escape)) Escape();
             Controller.Enabled = GridManager.IsActive;
         }
 
@@ -86,6 +88,32 @@ namespace _Scripts
             GridManager.ClearGrid();
             CurrentLocalData.StateIsSaved[CurrentLocalData.LastGameMode - 3] = false;
             SetSizeAndStartGame(CurrentLocalData.LastGameMode);
+        }
+
+        private GridState previousState;
+        private static readonly int Any = Animator.StringToHash("Any");
+        private void Escape()
+        {
+            switch (GridManager.State)
+            {
+                case GridState.Nothing:
+                case GridState.Pause:
+                    previousState = GridManager.State;
+                    GridManager.State = GridState.Quitting;
+                    messageBoxController.OpenNewMessageBox(
+                        Application.Quit,
+                        () => GridManager.State = previousState, 
+                        "Are you sure you want to quit the game?");
+                    break;
+                case GridState.Quitting:
+                    Application.Quit();
+                    break;
+                case GridState.Game:
+                case GridState.GameOver:
+                    Pause();
+                    MenuAnimator.SetTrigger(Any);
+                    break;
+            }
         }
 
         #endregion
@@ -121,7 +149,7 @@ namespace _Scripts
             }
             else
             {
-                GridManager.State = GridState.Game;
+                GridManager.State = GridState.Pause;
                 GridManager.IsActive = false;
                 GridManager.SaveDataToCloudAndToLocalMemory();
             }
@@ -206,7 +234,7 @@ namespace _Scripts
                 CurrentLocalData.StateIsSaved[GridManager.SideLength - 3] = true;
             }
 
-            GridManager.SaveDataToCloudAndToLocalMemory();
+            //GridManager.SaveDataToCloudAndToLocalMemory();
             GridManager.Undo();
         }
 
@@ -224,6 +252,7 @@ namespace _Scripts
                 Data.CurrentTheme = 4;
             }
 
+            GridManager.State = GridState.Nothing;
             PlayerPrefs.SetInt("theme", Data.CurrentTheme);
             GridManager.Drawer.ChangeTheme();
         }

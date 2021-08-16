@@ -9,7 +9,9 @@ namespace _Scripts
         [SerializeField] private float sensitivity = 50;
         [SerializeField] private int borderTop;
         [SerializeField] private int borderBottom;
-        private int canvasHeight;
+        [SerializeField] private int borderLeft;
+        [SerializeField] private int borderRight;
+        private Vector2 canvasSize;
         public bool Enabled { get; set; } = true;
         public bool SwipeRight { get; private set; }
         public bool SwipeUp { get; private set; }
@@ -18,30 +20,13 @@ namespace _Scripts
 
         private void Start()
         {
-            canvasHeight = Camera.main.pixelHeight;
+            canvasSize = new Vector2(Camera.main.pixelWidth, Camera.main.pixelHeight);
         }
 
         private void Update()
         {
             if (!Enabled) return;
             SwipeLeft = SwipeRight = SwipeUp = SwipeDown = false;
-
-            /*
-                #region PC Inputs
-
-                if (Input.GetMouseButtonDown(0))
-                {
-                    isDragging = true;
-                    StartTouch = Input.mousePosition;
-                }
-                else if (Input.GetMouseButtonUp(0))
-                {
-                    isDragging = false;
-                    Reset();
-                }
-
-                #endregion
-                */
 
             #region Mobile Inputs
 
@@ -68,7 +53,7 @@ namespace _Scripts
             if (isDragging)
             {
                 if (Input.touches.Length > 0) swipeDelta = Input.touches[0].position - startTouch;
-                else if (Input.GetMouseButton(0)) swipeDelta = (Vector2) Input.mousePosition - startTouch;
+                else if (Input.GetMouseButton(0)) swipeDelta = (Vector2)Input.mousePosition - startTouch;
             }
 
             // Making a swipe
@@ -77,14 +62,26 @@ namespace _Scripts
                 float x = swipeDelta.x, y = swipeDelta.y;
                 if (Mathf.Abs(x) > Mathf.Abs(y))
                 {
-                    if (x < 0) SwipeLeft = true;
-                    else SwipeRight = true;
+                    if (x < 0)
+                    {
+                        if (startTouch.x < canvasSize.x - borderRight)
+                        {
+                            SwipeLeft = true;
+                        }
+                    }
+                    else
+                    {
+                        if (startTouch.x > borderLeft)
+                        {
+                            SwipeRight = true;
+                        }
+                    }
                 }
                 else
                 {
                     if (y < 0)
                     {
-                        if (startTouch.y < canvasHeight - borderTop) SwipeDown = true;
+                        if (startTouch.y < canvasSize.y - borderTop) SwipeDown = true;
                     }
                     else
                     {

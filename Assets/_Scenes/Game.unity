@@ -1914,6 +1914,7 @@ MonoBehaviour:
   ScoreText: {fileID: 1249702604}
   BestScoreText: {fileID: 1022431995}
   messageBoxController: {fileID: 1989159282}
+  MenuAnimator: {fileID: 1100956966}
   gamePanelAnimator: {fileID: 1447894484}
   uiMaterial: {fileID: 2100000, guid: 3c075fc8959e0624991ef86f2b9d57ae, type: 2}
   signedInMaterial: {fileID: 2100000, guid: db49586368e415b4ca21768db531ba2b, type: 2}
@@ -1990,6 +1991,8 @@ MonoBehaviour:
   sensitivity: 50
   borderTop: 150
   borderBottom: 150
+  borderLeft: 60
+  borderRight: 80
 --- !u!1 &588266974
 GameObject:
   m_ObjectHideFlags: 0
@@ -7110,7 +7113,7 @@ GameObject:
   - component: {fileID: 2006159654}
   - component: {fileID: 2006159651}
   m_Layer: 5
-  m_Name: Map
+  m_Name: Grid
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

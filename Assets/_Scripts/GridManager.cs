@@ -594,7 +594,7 @@ namespace _Scripts
             {
                 for (int j = 0; j < Columns; j++)
                 {
-                    if (!Units[i, j] .IsEmpty)
+                    if (!Units[i, j].IsEmpty)
                     {
                         unitsPool.Enqueue(Units[i, j]);
                         drawer.HideUnit(Units[i, j]);
@@ -614,6 +614,7 @@ namespace _Scripts
         Nothing,
         Game,
         Pause,
-        GameOver
+        GameOver,
+        Quitting
     }
 }
