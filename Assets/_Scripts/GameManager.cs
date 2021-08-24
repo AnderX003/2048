@@ -15,6 +15,7 @@ namespace _Scripts
         
         [SerializeField] private GridManager GridManager;
         [SerializeField] private SwipeController Controller;
+        [SerializeField] private AdsController adsController;
         [SerializeField] private Text ScoreText, BestScoreText;
         [SerializeField] private MessageBoxController messageBoxController;
         [SerializeField] private Animator MenuAnimator;
@@ -37,6 +38,7 @@ namespace _Scripts
         private void Start()
         {
             SetTheme(PlayerPrefs.GetInt("theme"));
+            adsController.Initialize();
         }
 
         #region Game managment
