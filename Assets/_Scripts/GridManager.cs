@@ -16,7 +16,7 @@ namespace _Scripts
         [SerializeField] private Unit emptyUnit;
         private readonly Queue<Unit> unitsPool = new Queue<Unit>();
 
-        public Unit[,] Units { get; private set; }
+        private Unit[,] Units;
         public UIDrawer Drawer => drawer;
         private bool BestsWasChanged;
         private int Rows;
@@ -469,7 +469,8 @@ namespace _Scripts
                 Drawer.IncrementUnit(nextUnit);
                 Data.Score += nextUnit.Value;
                 GameManager.UpdateScoreText();
-                if (SideLength == 4) UnlockAchievement(nextUnit.Value);
+                /*if (SideLength == 4) */
+                UnlockAchievement(nextUnit.Value, SideLength);
                 return true;
             }
 
@@ -502,9 +503,50 @@ namespace _Scripts
             }
         }
 
-        private static void UnlockAchievement(int value)
+        private static void UnlockAchievement(int value, int side)
         {
-            string id = value switch
+            string id = side switch
+            {
+                3 => value switch
+                {
+                    256 => GPGSIds.achievement_256_at_33,
+                    512 => GPGSIds.achievement_512_at_33,
+                    1024 => GPGSIds.achievement_1024_at_33,
+                    _ => null
+                },
+                4 => value switch
+                {
+                    512 => GPGSIds.achievement_512_at_44,
+                    1024 => GPGSIds.achievement_1024_at_44,
+                    2048 => GPGSIds.achievement_2048_at_44,
+                    4096 => GPGSIds.achievement_4096_at_44,
+                    8192 => GPGSIds.achievement_8192_at_44,
+                    16384 => GPGSIds.achievement_16384_at_44,
+                    _ => null
+                },
+                5 => value switch
+                {
+                    2048 => GPGSIds.achievement_2048_at_55,
+                    _ => null
+                },
+                6 => value switch
+                {
+                    2048 => GPGSIds.achievement_2048_at_66,
+                    _ => null
+                },
+                7 => value switch
+                {
+                    2048 => GPGSIds.achievement_2048_at_77,
+                    _ => null
+                },
+                8 => value switch
+                {
+                    2048 => GPGSIds.achievement_2048_at_88,
+                    _ => null
+                },
+                _ => null
+            };
+            /*string id = value switch
             {
                 512 => GPGSIds.achievement_512,
                 1024 => GPGSIds.achievement_1024,
@@ -513,7 +555,7 @@ namespace _Scripts
                 8192 => GPGSIds.achievement_8192,
                 16384 => GPGSIds.achievement_16384,
                 _ => null
-            };
+            };*/
             GPGSManager.UnlockAchievement(id);
         }
 
@@ -521,12 +563,12 @@ namespace _Scripts
         {
             string id = side switch
             {
-                3 => GPGSIds.leaderboard_3x3_leaderboard,
-                4 => GPGSIds.leaderboard_4x4_leaderboard,
-                5 => GPGSIds.leaderboard_5x5_leaderboard,
-                6 => GPGSIds.leaderboard_6x6_leaderboard,
-                7 => GPGSIds.leaderboard_7x7_leaderboard,
-                8 => GPGSIds.leaderboard_8x8_leaderboard,
+                3 => GPGSIds.leaderboard_33_leaderboard,
+                4 => GPGSIds.leaderboard_44_leaderboard,
+                5 => GPGSIds.leaderboard_55_leaderboard,
+                6 => GPGSIds.leaderboard_66_leaderboard,
+                7 => GPGSIds.leaderboard_77_leaderboard,
+                8 => GPGSIds.leaderboard_88_leaderboard,
                 _ => null
             };
             GPGSManager.AddScoreToLeaderboard(id, value);

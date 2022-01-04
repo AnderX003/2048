@@ -8,17 +8,19 @@
 /Temp
 /UserSettings
 /Builds
+/External files
 /2048.sln.DotSettings.user
 /.gitattributes
 
-/Assets/Styles
-/Assets/_Trash
+/Assets/UI
+#/Assets/_Trash
 /Assets/Plugins
 /Assets/Resources
 /Assets/ExternalDependencyManager
 /Assets/GooglePlayGames
 /Assets/GPGSIds.cs
 /Assets/GoogleMobileAds
+/Assets/GeneratedLocalRepo
 
 *.meta
 *.sln

@@ -3,7 +3,6 @@
         using GooglePlayGames;
         using GooglePlayGames.BasicApi;
         using GooglePlayGames.BasicApi.SavedGame;
-        using UnityEngine.SocialPlatforms;
         using UnityEngine;
 
         namespace _Scripts
@@ -26,7 +25,6 @@
                 {
                     if(isProcessing) return;
                     isProcessing = true;
-                    //Debug.Log("sign in");
                     Social.localUser.Authenticate(success =>
                     {
                         isProcessing = false;
@@ -38,7 +36,6 @@
 
                 public static void SignOut()
                 {
-                    //Debug.Log("sign out");
                     if (!Social.localUser.authenticated) return;
                     PlayGamesPlatform.Instance.SignOut();
                     PlayerPrefs.SetInt("DataWasReadFromCloud", 0);
@@ -104,7 +101,6 @@
                 {
                     if (isProcessing || !Social.localUser.authenticated) return;
                     isProcessing = true;
-                    //Debug.Log("Opening connection");
                     PlayGamesPlatform.Instance.SavedGame.OpenWithAutomaticConflictResolution(name,
                         DataSource.ReadCacheOrNetwork,
                         ConflictResolutionStrategy.UseMostRecentlySaved, onConnectionOpen);
@@ -113,7 +109,6 @@
                 private static void WriteOnConnectionOpen(SavedGameRequestStatus status, ISavedGameMetadata metadata)
                 {
                     if (status != SavedGameRequestStatus.Success) return;
-                    //Debug.Log("Connection opened to write");
                     SavedGameMetadataUpdate updatedMetadata = new SavedGameMetadataUpdate.Builder()
                         .WithUpdatedDescription("Saved at " + DateTime.Now.ToString(CultureInfo.InvariantCulture))
                         .Build();
@@ -122,8 +117,6 @@
                         (savedGameRequestStatus, savedGameMetadata) =>
                         {
                             isProcessing = false;
-                            //if (savedGameRequestStatus == SavedGameRequestStatus.Success)
-                                //Debug.Log("Written to cloud");
                         });
                 }
 
@@ -134,7 +127,6 @@
                         {
                             isProcessing = false;
                             if (status != SavedGameRequestStatus.Success) return;
-                            //Debug.Log("Connection opened to read");
                             PlayerPrefs.SetInt("DataWasReadFromCloud", 1);
                             actionAfterRead(data);
                         });

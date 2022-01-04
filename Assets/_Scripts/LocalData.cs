@@ -18,5 +18,7 @@ namespace _Scripts
             new[] {new[] {0, 0, 0,0, 0,0,0,0}, new[] {0, 0, 0,0,0, 0,0,0}, new[] {0, 0, 0,0,0, 0,0,0}, new[] {0, 0,0, 0,0, 0,0,0}, new[] {0, 0,0, 0,0, 0,0,0}, new[] {0, 0, 0,0,0, 0,0,0}, new[] {0, 0,0, 0,0, 0,0,0}, new[] {0, 0, 0,0,0, 0,0,0}}
         };
         public bool AudioState = false;
+        
+        public bool[] AdIsShowedInThisGame = {false, false, false, false, false, false};
     }
 }

@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -28,11 +27,16 @@ namespace _Scripts
         {
             Instance = this;
 
-            LocalDataManager.ReadLocalData(data => CurrentLocalData = data ?? new LocalData());
+            LocalDataManager.ReadLocalData(data =>
+            {
+                CurrentLocalData = data ?? new LocalData();
+                menuGameMode = CurrentLocalData.LastGameMode;
+                UpdateModeText();
+            });
 
             if (!PlayerPrefs.HasKey("GameWasPlayed")) PlayerPrefs.SetInt("DataWasReadFromCloud", 0);
             GPGSManager.Initialize();
-            GPGSManager.SignIn( InitializeSignInOrOutGPGSButtonColor, dataName, OnDataRead);
+            GPGSManager.SignIn(InitializeSignInOrOutGPGSButtonColor, dataName, OnDataRead);
         }
 
         private void Start()
@@ -77,10 +81,21 @@ namespace _Scripts
         public void GameOverMethod()
         {
             gamePanelAnimator.SetTrigger(In);
+            
             CurrentLocalData.StateIsSaved[GridManager.SideLength - 3] = false;
+            
             if (Data.Score > CurrentLocalData.BestScores[GridManager.SideLength - 3])
                 CurrentLocalData.BestScores[GridManager.SideLength - 3] = Data.Score;
             CurrentLocalData.LastScores[GridManager.SideLength - 3] = 0;
+            
+            if (!CurrentLocalData.AdIsShowedInThisGame[GridManager.SideLength - 3])
+            {
+                CurrentLocalData.AdIsShowedInThisGame[GridManager.SideLength - 3] = true;
+                StartCoroutine(
+                    GridManager.InvokeWithDelay(
+                        0.4f, adsController.ShowGameOverAd));
+            }
+            
             GridManager.SaveDataToCloudAndToLocalMemory();
         }
 
@@ -128,15 +143,24 @@ namespace _Scripts
             {
                 case GridState.Nothing:
                 case GridState.GameOver:
-                    SetSizeAndStartGame(CurrentLocalData.LastGameMode);
+                    SetSizeAndStartGame(menuGameMode);//CurrentLocalData.LastGameMode);
                     GridManager.State = GridState.Game;
                     //GridManager.IsActive = true;
                     break;
                 case GridState.Game:
                 case GridState.Pause:
-                    GridManager.IsActive = true;
-                    GridManager.State = GridState.Game;
-                    GridManager.IsActive = true;
+                    if (menuGameMode == GridManager.SideLength)
+                    {
+                        GridManager.IsActive = true;
+                        GridManager.State = GridState.Game;
+                        GridManager.IsActive = true;
+                    }
+                    else
+                    {
+                        SetSizeAndStartGame(menuGameMode);
+                        GridManager.State = GridState.Game;
+                    }
+
                     break;
             }
         }
@@ -186,13 +210,38 @@ namespace _Scripts
             }
         }
 
+
+        private int menuGameMode = 4;
+        [SerializeField] private Text modeText;
+        public void ChangeGameMode(bool plus)
+        {
+            if (plus)
+            {
+                if(menuGameMode == 8) return;
+                menuGameMode++;
+            }
+            else
+            {
+                if (menuGameMode == 3) return;
+                menuGameMode--;
+            }
+            UpdateModeText();
+        }
+
+        private void UpdateModeText()
+        {
+            modeText.text = $"{menuGameMode}×{menuGameMode}";
+        }
+
         private void SetSizeAndStartGame(int sideLenght)
         {
             CurrentLocalData.LastGameMode = sideLenght;
+            
             if (FirstGameStarted)
                 GridManager.ClearGrid();
             else
                 FirstGameStarted = true;
+            
             if (CurrentLocalData.StateIsSaved[sideLenght - 3])
             {
                 FirstGameStarted = true;
@@ -203,6 +252,7 @@ namespace _Scripts
             {
                 BestScoreText.text = CurrentLocalData.BestScores[sideLenght - 3].ToString();
                 CurrentLocalData.LastGameMode = sideLenght;
+                CurrentLocalData.AdIsShowedInThisGame[sideLenght - 3] = false;
                 GridManager.InitializeGrid(sideLenght);
             }
         }
@@ -235,23 +285,21 @@ namespace _Scripts
                 GridManager.IsActive = true;
                 CurrentLocalData.StateIsSaved[GridManager.SideLength - 3] = true;
             }
-
-            //GridManager.SaveDataToCloudAndToLocalMemory();
+            
             GridManager.Undo();
         }
 
-        public void TurnOnOffSound() { }
-
-        public void ChangeTheme(int next)
+        private const int themes = 4 - 1;
+        public void ChangeTheme(int theme)
         {
-            Data.CurrentTheme += next;
-            if (Data.CurrentTheme > 4)
+            Data.CurrentTheme += theme;
+            if (Data.CurrentTheme > themes)
             {
                 Data.CurrentTheme = 0;
             }
             else if (Data.CurrentTheme < 0)
             {
-                Data.CurrentTheme = 4;
+                Data.CurrentTheme = themes;
             }
 
             GridManager.State = GridState.Nothing;
@@ -261,17 +309,20 @@ namespace _Scripts
 
         private void SetTheme(int theme)
         {
+            if (themes < theme) theme = 0;
             Data.CurrentTheme = theme;
-            GridManager.Drawer.ChangeTheme();
+            GridManager.Drawer.SetTheme();
         }
 
-        [SerializeField] private Material uiMaterial, signedInMaterial;
+        //[SerializeField] private Material uiMaterial, signedInMaterial;
         [SerializeField] private Image gpgsButtonImage;
+        [SerializeField] private Sprite[] gpgsButtonSprites;
         public static string dataName => "bests";
 
         private void InitializeSignInOrOutGPGSButtonColor()
         {
-            gpgsButtonImage.material = GPGSManager.Authenticated() ? signedInMaterial : uiMaterial;
+            //gpgsButtonImage.material = GPGSManager.Authenticated() ? signedInMaterial : uiMaterial;
+            gpgsButtonImage.sprite = GPGSManager.Authenticated() ? gpgsButtonSprites[0] : gpgsButtonSprites[1];
         }
 
         public void SignInOrOutGPGS()
@@ -282,7 +333,9 @@ namespace _Scripts
                     () =>
                     {
                         GPGSManager.SignOut();
-                        gpgsButtonImage.material = uiMaterial;
+                        InitializeSignInOrOutGPGSButtonColor();
+                        GridManager.State = GridState.Nothing;
+                        //gpgsButtonImage.material = uiMaterial;
                     },
                     () => { },
                     "All your local data will be erased, are you sure you want to sign out?");
@@ -301,6 +354,7 @@ namespace _Scripts
             {
                 CurrentLocalData.BestScores = dataInt;
                 LocalDataManager.WriteLocalData(CurrentLocalData);
+                GridManager.State = GridState.Nothing;
             }
             else
             {

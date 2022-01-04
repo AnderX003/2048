@@ -19,19 +19,15 @@ namespace _Scripts
 
                 formatter.Serialize(stream, data);
                 stream.Close();
-                //Debug.Log("Data Written");
             });
         }
 
         public static async void ReadLocalData(Action<LocalData> action)
         {
-            await Task.Run(() =>
-            {
-                action(ReadLocalData());
-            });
+            action(await Task.Run(ReadLocalData));
         }
 
-        public static LocalData ReadLocalData()
+        private static LocalData ReadLocalData()
         {
             if (File.Exists(path))
             {
@@ -40,11 +36,9 @@ namespace _Scripts
                 LocalData data = formatter.Deserialize(stream) as LocalData;
                 stream.Close();
 
-                //Debug.Log("Data Read\n" + data?.LastGameMode);
                 return data;
             }
 
-            //Debug.Log("No Data to Read");
             return null;
         }
     }
