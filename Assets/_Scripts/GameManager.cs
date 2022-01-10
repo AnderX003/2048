@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -52,16 +53,16 @@ namespace _Scripts
             if (GridManager.IsActive && GridManager.MoveIsOver)
             {
 #if UNITY_ANDROID
-                if (Controller.SwipeRight) GridManager.Turn(0);
-                else if (Controller.SwipeUp) GridManager.Turn(1);
-                else if (Controller.SwipeLeft) GridManager.Turn(2);
-                else if (Controller.SwipeDown) GridManager.Turn(3);
+                if (Controller.SwipeRight) GridManager.Turn(Side.R);
+                else if (Controller.SwipeUp) GridManager.Turn(Side.Up);
+                else if (Controller.SwipeLeft) GridManager.Turn(Side.L);
+                else if (Controller.SwipeDown) GridManager.Turn(Side.Down);
                 #endif
 #if UNITY_EDITOR
-                if (Input.GetKeyUp(KeyCode.RightArrow)) GridManager.Turn(0);
-                else if (Input.GetKeyUp(KeyCode.UpArrow)) GridManager.Turn(1);
-                else if (Input.GetKeyUp(KeyCode.LeftArrow)) GridManager.Turn(2);
-                else if (Input.GetKeyUp(KeyCode.DownArrow)) GridManager.Turn(3);
+                if (Input.GetKeyUp(KeyCode.RightArrow)) GridManager.Turn(Side.R);
+                else if (Input.GetKeyUp(KeyCode.UpArrow)) GridManager.Turn(Side.Up);
+                else if (Input.GetKeyUp(KeyCode.LeftArrow)) GridManager.Turn(Side.L);
+                else if (Input.GetKeyUp(KeyCode.DownArrow)) GridManager.Turn(Side.Down);
 #endif
             }
             if(Input.GetKeyDown(KeyCode.Escape)) Escape();
@@ -278,6 +279,9 @@ namespace _Scripts
 
         public void Undo()
         {
+            if (!GridManager.CanUndo || !GridManager.MoveIsOver) return;
+            GridManager.Undo();
+            
             if (GridManager.State == GridState.GameOver)
             {
                 gamePanelAnimator.SetTrigger(Out);
@@ -285,8 +289,6 @@ namespace _Scripts
                 GridManager.IsActive = true;
                 CurrentLocalData.StateIsSaved[GridManager.SideLength - 3] = true;
             }
-            
-            GridManager.Undo();
         }
 
         private const int themes = 4 - 1;
@@ -314,14 +316,12 @@ namespace _Scripts
             GridManager.Drawer.SetTheme();
         }
 
-        //[SerializeField] private Material uiMaterial, signedInMaterial;
         [SerializeField] private Image gpgsButtonImage;
         [SerializeField] private Sprite[] gpgsButtonSprites;
         public static string dataName => "bests";
 
         private void InitializeSignInOrOutGPGSButtonColor()
         {
-            //gpgsButtonImage.material = GPGSManager.Authenticated() ? signedInMaterial : uiMaterial;
             gpgsButtonImage.sprite = GPGSManager.Authenticated() ? gpgsButtonSprites[0] : gpgsButtonSprites[1];
         }
 
@@ -335,7 +335,6 @@ namespace _Scripts
                         GPGSManager.SignOut();
                         InitializeSignInOrOutGPGSButtonColor();
                         GridManager.State = GridState.Nothing;
-                        //gpgsButtonImage.material = uiMaterial;
                     },
                     () => { },
                     "All your local data will be erased, are you sure you want to sign out?");

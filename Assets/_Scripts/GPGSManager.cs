@@ -54,6 +54,7 @@
 
                 public static void UnlockAchievement(string id)
                 {
+                    if (id == null) return;
                     Social.ReportProgress(id, 100, success => { });
                 }
 

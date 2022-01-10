@@ -57,9 +57,10 @@ namespace _Scripts
             }
 
             // Making a swipe
-            if (swipeDelta.magnitude > sensitivity)
+            if (!(swipeDelta.magnitude > sensitivity)) return;
+            float x = swipeDelta.x, y = swipeDelta.y;
+            if (startTouch.y > borderBottom)
             {
-                float x = swipeDelta.x, y = swipeDelta.y;
                 if (Mathf.Abs(x) > Mathf.Abs(y))
                 {
                     if (x < 0)
@@ -85,12 +86,13 @@ namespace _Scripts
                     }
                     else
                     {
-                        if (startTouch.y > borderBottom) SwipeUp = true;
+                        /*if (startTouch.y > borderBottom)*/
+                        SwipeUp = true;
                     }
                 }
-
-                Reset();
             }
+
+            Reset();
         }
 
         private void Reset()

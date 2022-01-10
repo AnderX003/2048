@@ -55,6 +55,7 @@ namespace _Scripts
                     Units[i, j] = emptyUnit;
                 }
             }
+
             UnitCounter = 0;
             Drawer.SetMapImagesBySize(SideLength);
             CreateNewUnit(true);
@@ -63,8 +64,6 @@ namespace _Scripts
             LastLastUnitsState = new int[Rows, Columns];
             GameManager.CurrentLocalData.StateIsSaved[sideLength - 3] = true;
         }
-        
-        private readonly Queue<Unit> unitsToDraw = new Queue<Unit>();
 
         public void InitializeGridFromLocalData(int sideLength)
         {
@@ -73,7 +72,7 @@ namespace _Scripts
             GameManager.UpdateScoreText();
             Data.MaxValue = SideLength - 1;
             Data.CurrentLayout = Data.layouts[SideLength];
-                //IsActive = true;
+            //IsActive = true;
             State = GridState.Game;
             Rows = Columns = sideLength;
             Units = new Unit[Rows, Columns];
@@ -84,6 +83,7 @@ namespace _Scripts
                     Units[i, j] = emptyUnit;
                 }
             }
+
             Drawer.SetMapImagesBySize(SideLength);
             LastUnitsState = new int[Rows, Columns];
             LastLastUnitsState = new int[Rows, Columns];
@@ -99,19 +99,24 @@ namespace _Scripts
 
             CanUndo = false;
             StartCoroutine(
-                WaitForFrames(() => {
-                StartCoroutine(
-                    DrawUnits()); }, 5));
+                WaitForFrames(() =>
+                {
+                    StartCoroutine(
+                        DrawUnits());
+                }, 5));
         }
 
         private IEnumerator DrawUnits()
         {
-            int count = unitsToDraw.Count;
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < Rows; i++)
             {
-                yield return null;
-                Drawer.DrawNewUnit(unitsToDraw.Dequeue());
+                for (int j = 0; j < Columns; j++)
+                {
+                    yield return null;
+                    if (Units[i, j] != emptyUnit) Drawer.DrawNewUnit(Units[i, j]);
+                }
             }
+            
             IsActive = true;
         }
 
@@ -126,14 +131,32 @@ namespace _Scripts
                 CanCreateNewUnit = false;
             }
 
-            int positionX;
-            int positionY;
-            int MaxPos = Data.MaxValue + 1;
-            do
+            int positionX = -1;
+            int positionY = -1;
+            if (UnitCounter + 1 == SideLength * SideLength)
             {
-                positionX = Random.Range(0, MaxPos);
-                positionY = Random.Range(0, MaxPos);
-            } while (!Units[positionX, positionY].IsEmpty);
+                for (int i = 0; i < Rows; i++)
+                {
+                    for (int j = 0; j < Columns; j++)
+                    {
+                        if (Units[i, j] == emptyUnit)
+                        {
+                            positionX = i;
+                            positionY = j;
+                            break;
+                        };
+                    }
+                }
+            }
+            else
+            {
+                int MaxPos = Data.MaxValue + 1;
+                do
+                {
+                    positionX = Random.Range(0, MaxPos);
+                    positionY = Random.Range(0, MaxPos);
+                } while (!Units[positionX, positionY].IsEmpty);
+            }
 
             Unit unit;
             if (unitsPool.Count > 0)
@@ -152,11 +175,10 @@ namespace _Scripts
             unit.Value = Random.Range(0, 4) == 0 ? 4 : 2;
             UnitCounter++;
             MoveIsOver = false;
-            StartCoroutine(InvokeWithDelay(Drawer.MoveDuration, () =>
-            {
-                Drawer.DrawNewUnit(unit);
-                MoveIsOver = true;
-            }));
+            StartCoroutine(InvokeWithDelay(Drawer.MoveDuration, 
+                () => { Drawer.DrawNewUnit(unit); }));
+            StartCoroutine(InvokeWithDelay(Drawer.MoveDuration + Drawer.AppearDuration / 3,
+                () => { MoveIsOver = true; }));
         }
 
         private void CreateNewUnit(int posX, int posY, int value, bool canCreateSeveralUnits = false)
@@ -184,20 +206,19 @@ namespace _Scripts
             unit.PositionY = posY;
             unit.Value = value;
             UnitCounter++;
-            unitsToDraw.Enqueue(unit);
-            //StartCoroutine(WaitOneFrame(() => Drawer.DrawNewUnit(unit), 10));
         }
 
-        
+
         private static IEnumerator WaitForFrames(Action action, int frames)
         {
-            for (int i=0; i < frames; i++)
+            for (int i = 0; i < frames; i++)
             {
                 yield return null;
             }
+
             action();
         }
-        
+
         #endregion
 
         #region Game Over Logic
@@ -267,7 +288,7 @@ namespace _Scripts
 
         #region Turn logic
 
-        public void Turn(int side)
+        public void Turn(Side side)
         {
             CanCreateNewUnit = true;
             SaveCellsState();
@@ -275,7 +296,7 @@ namespace _Scripts
             LastMove = false;
             switch (side)
             {
-                case 0: //→
+                case Side.R: //→
                     for (int x = Rows - 1; x >= 0; x--)
                     {
                         for (int y = 0; y < Columns; y++)
@@ -287,7 +308,7 @@ namespace _Scripts
                     }
 
                     break;
-                case 1: //↑
+                case Side.Up: 
                     for (int y = Columns - 1; y >= 0; y--)
                     {
                         for (int x = 0; x < Rows; x++)
@@ -299,7 +320,7 @@ namespace _Scripts
                     }
 
                     break;
-                case 2: //←
+                case Side.L: 
                     for (int x = 0; x < Rows; x++)
                     {
                         for (int y = 0; y < Columns; y++)
@@ -311,7 +332,7 @@ namespace _Scripts
                     }
 
                     break;
-                case 3: //↓
+                case Side.Down: 
                     for (int y = 0; y < Columns; y++)
                     {
                         for (int x = 0; x < Rows; x++)
@@ -337,21 +358,21 @@ namespace _Scripts
                 BestsWasChanged = true;
             }
         }
-        
+
         public static IEnumerator InvokeWithDelay(float delay, Action action)
         {
-            if(action == null)
+            if (action == null)
                 yield break;
             yield return new WaitForSeconds(delay);
             action();
         }
 
-        private bool MoveUnit(Unit unit, int side)
+        private bool MoveUnit(Unit unit, Side side)
         {
             Unit nextUnit = emptyUnit;
             switch (side)
             {
-                case 0:
+                case Side.R:
                     if (unit.PositionX == Rows - 1) return false;
                     for (int x = unit.PositionX + 1; x < Rows; x++)
                     {
@@ -361,7 +382,7 @@ namespace _Scripts
                     }
 
                     break;
-                case 1:
+                case Side.Up:
                     if (unit.PositionY == Columns - 1) return false;
                     for (int y = unit.PositionY + 1; y < Columns; y++)
                     {
@@ -371,21 +392,21 @@ namespace _Scripts
                     }
 
                     break;
-                case 2:
+                case Side.L:
                     if (unit.PositionX == 0) return false;
                     for (int x = unit.PositionX - 1; x >= 0; x--)
                     {
-                        if (Units[x, unit.PositionY] .IsEmpty) continue;
+                        if (Units[x, unit.PositionY].IsEmpty) continue;
                         nextUnit = Units[x, unit.PositionY];
                         break;
                     }
 
                     break;
-                case 3:
+                case Side.Down:
                     if (unit.PositionY == 0) return false;
                     for (int y = unit.PositionY - 1; y >= 0; y--)
                     {
-                        if (Units[unit.PositionX, y] .IsEmpty) continue;
+                        if (Units[unit.PositionX, y].IsEmpty) continue;
                         nextUnit = Units[unit.PositionX, y];
                         break;
                     }
@@ -393,50 +414,50 @@ namespace _Scripts
                     break;
             }
 
-            if (nextUnit .IsEmpty)
+            if (nextUnit.IsEmpty)
             {
                 Units[unit.PositionX, unit.PositionY] = emptyUnit;
                 switch (side)
                 {
-                    case 0:
+                    case Side.R:
                         unit.PositionX = Rows - 1;
                         break;
-                    case 1:
+                    case Side.Up:
                         unit.PositionY = Columns - 1;
                         break;
-                    case 2:
+                    case Side.L:
                         unit.PositionX = 0;
                         break;
-                    case 3:
+                    case Side.Down:
                         unit.PositionY = 0;
                         break;
                 }
 
                 Units[unit.PositionX, unit.PositionY] = unit;
-                Drawer.UpdateUnit(unit);
+                Drawer.UpdateUnitPosition(unit);
                 return true;
             }
 
-            if (nextUnit.Value != unit.Value || nextUnit.WasChanged && nextUnit.Value == unit.Value)
+            if (nextUnit.Value != unit.Value || nextUnit.WasChanged)
             {
                 switch (side)
                 {
-                    case 0:
+                    case Side.R:
                         if (nextUnit.PositionX == unit.PositionX + 1) return false;
                         Units[unit.PositionX, unit.PositionY] = emptyUnit;
                         unit.PositionX = nextUnit.PositionX - 1;
                         break;
-                    case 1:
+                    case Side.Up:
                         if (nextUnit.PositionY == unit.PositionY + 1) return false;
                         Units[unit.PositionX, unit.PositionY] = emptyUnit;
                         unit.PositionY = nextUnit.PositionY - 1;
                         break;
-                    case 2:
+                    case Side.L:
                         if (nextUnit.PositionX == unit.PositionX - 1) return false;
                         Units[unit.PositionX, unit.PositionY] = emptyUnit;
                         unit.PositionX = nextUnit.PositionX + 1;
                         break;
-                    case 3:
+                    case Side.Down:
                         if (nextUnit.PositionY == unit.PositionY - 1) return false;
                         Units[unit.PositionX, unit.PositionY] = emptyUnit;
                         unit.PositionY = nextUnit.PositionY + 1;
@@ -444,7 +465,7 @@ namespace _Scripts
                 }
 
                 Units[unit.PositionX, unit.PositionY] = unit;
-                Drawer.UpdateUnit(unit);
+                Drawer.UpdateUnitPosition(unit);
                 return true;
             }
 
@@ -454,22 +475,22 @@ namespace _Scripts
                 UnitCounter--;
                 switch (side)
                 {
-                    case 0:
-                    case 2:
+                    case Side.R:
+                    case Side.L:
                         unit.PositionX = nextUnit.PositionX;
                         break;
-                    case 1:
-                    case 3:
+                    case Side.Up:
+                    case Side.Down:
                         unit.PositionY = nextUnit.PositionY;
                         break;
                 }
-                Drawer.UpdateUnit(unit, true, unitsPool);
+
+                Drawer.UpdateUnitPosition(unit, true, unitsPool);
                 nextUnit.Value *= 2;
                 nextUnit.WasChanged = true;
                 Drawer.IncrementUnit(nextUnit);
                 Data.Score += nextUnit.Value;
                 GameManager.UpdateScoreText();
-                /*if (SideLength == 4) */
                 UnlockAchievement(nextUnit.Value, SideLength);
                 return true;
             }
@@ -479,7 +500,7 @@ namespace _Scripts
 
         private void OnApplicationFocus(bool hasFocus)
         {
-            if(!hasFocus) SaveDataToCloudAndToLocalMemory();
+            if (!hasFocus) SaveDataToCloudAndToLocalMemory();
         }
 
         public void SaveDataToCloudAndToLocalMemory()
@@ -546,16 +567,6 @@ namespace _Scripts
                 },
                 _ => null
             };
-            /*string id = value switch
-            {
-                512 => GPGSIds.achievement_512,
-                1024 => GPGSIds.achievement_1024,
-                2048 => GPGSIds.achievement_2048,
-                4096 => GPGSIds.achievement_4096,
-                8192 => GPGSIds.achievement_8192,
-                16384 => GPGSIds.achievement_16384,
-                _ => null
-            };*/
             GPGSManager.UnlockAchievement(id);
         }
 
@@ -578,9 +589,9 @@ namespace _Scripts
 
         #region Undo logic
 
-        private bool CanUndo { get; set; }
+        public bool CanUndo { get; set; }
         private bool LastMove = true;
-        
+
         private int LastScore;
         private int[,] LastUnitsState;
         private int[,] LastLastUnitsState;
@@ -588,13 +599,13 @@ namespace _Scripts
         private void SaveCellsState()
         {
             if (!LastMove) return;
-            LastLastUnitsState = (int[,]) LastUnitsState.Clone();
+            LastLastUnitsState = (int[,])LastUnitsState.Clone();
 
             for (int i = 0; i < Rows; i++)
             {
                 for (int j = 0; j < Columns; j++)
                 {
-                    LastUnitsState[i, j] = Units[i, j] .IsEmpty ? 0 : Units[i, j].Value;
+                    LastUnitsState[i, j] = Units[i, j].IsEmpty ? 0 : Units[i, j].Value;
                 }
             }
 
@@ -603,9 +614,11 @@ namespace _Scripts
 
         public void Undo()
         {
-            if (!CanUndo) return;
+            MoveIsOver = false;
+            StartCoroutine(InvokeWithDelay(0.1f, () => { MoveIsOver = true; }));
             var unitsState = LastMove ? LastUnitsState : LastLastUnitsState;
             ClearGrid();
+
             for (int i = 0; i < Rows; i++)
             {
                 for (int j = 0; j < Columns; j++)
@@ -614,17 +627,14 @@ namespace _Scripts
                 }
             }
 
-            StartCoroutine(
-                WaitForFrames(
-                    () =>
-                    {
-                        int count = unitsToDraw.Count;
-                        for (int i = 0; i < count; i++)
-                        {
-                            Drawer.DrawNewUnit(unitsToDraw.Dequeue());
-                        }
-                    }, 2));
-
+            for (int i = 0; i < Rows; i++)
+            {
+                for (int j = 0; j < Columns; j++)
+                {
+                    if (Units[i, j] != emptyUnit) Drawer.DrawNewUnit(Units[i, j]);
+                }
+            }
+            
             Data.Score = LastScore;
             GameManager.UpdateScoreText();
             CanUndo = false;
@@ -658,5 +668,13 @@ namespace _Scripts
         Pause,
         GameOver,
         Quitting
+    }
+
+    public enum Side
+    {
+        R,
+        Up,
+        L,
+        Down
     }
 }
