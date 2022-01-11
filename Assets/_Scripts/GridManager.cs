@@ -139,12 +139,10 @@ namespace _Scripts
                 {
                     for (int j = 0; j < Columns; j++)
                     {
-                        if (Units[i, j] == emptyUnit)
-                        {
-                            positionX = i;
-                            positionY = j;
-                            break;
-                        };
+                        if (Units[i, j] != emptyUnit) continue;
+                        positionX = i;
+                        positionY = j;
+                        break;
                     }
                 }
             }
@@ -175,10 +173,13 @@ namespace _Scripts
             unit.Value = Random.Range(0, 4) == 0 ? 4 : 2;
             UnitCounter++;
             MoveIsOver = false;
-            StartCoroutine(InvokeWithDelay(Drawer.MoveDuration, 
-                () => { Drawer.DrawNewUnit(unit); }));
-            StartCoroutine(InvokeWithDelay(Drawer.MoveDuration + Drawer.AppearDuration / 3,
-                () => { MoveIsOver = true; }));
+            Drawer.SetNewUnitPosNScale(unit);
+            StartCoroutine(InvokeWithDelay(Drawer.MoveDuration * Drawer.AppearDelay,
+                () =>
+                {
+                    Drawer.DrawNewUnit(unit, false);
+                    MoveIsOver = true;
+                }));
         }
 
         private void CreateNewUnit(int posX, int posY, int value, bool canCreateSeveralUnits = false)

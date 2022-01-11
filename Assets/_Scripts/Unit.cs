@@ -9,20 +9,21 @@ namespace _Scripts
         public int PositionX {get; set; }
         public int PositionY { get; set; }
         public bool WasChanged { get; set; }
+
+        public UnitAnimationQueue AnimationQueue { get; private set; } = new UnitAnimationQueue();
         public bool IsEmpty => isEmpty;
 
         [SerializeField] private bool isEmpty;
+
 
         #region Components
 
         [SerializeField] private RectTransform unitRectTransform;
         [SerializeField] private Image unitImage;
-        [SerializeField] private GameObject textObject;
         [SerializeField] private Text unitText;
         
         public RectTransform UnitRectTransform => unitRectTransform;
         public Image UnitImage => unitImage;
-        public GameObject TextObject => textObject;
         public Text UnitText => unitText;
         
         #endregion

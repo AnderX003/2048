@@ -3432,7 +3432,6 @@ MonoBehaviour:
   isEmpty: 1
   unitRectTransform: {fileID: 0}
   unitImage: {fileID: 0}
-  textObject: {fileID: 0}
   unitText: {fileID: 0}
 --- !u!114 &1284291441
 MonoBehaviour:
@@ -3446,13 +3445,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c895484f95a9fb479c9955ec157373b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Grid: {fileID: 1284291442}
   hidePosition: {x: -200, y: -200, z: 0}
   moveEase: 4
   appearanceEase: 15
   punchEase: 19
   moveDuration: 0.125
   appearDuration: 0.3
+  appearDelay: 0.8
+  colorChangingDuration: 0.3
+  punchDuration: 0.2
+  punchRatio: 0.2
   gridImage: {fileID: 82910389}
   gridSprites:
   - {fileID: 21300000, guid: ccfca1240c9831440bc5cb62026d2d56, type: 3}
