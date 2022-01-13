@@ -3449,12 +3449,13 @@ MonoBehaviour:
   moveEase: 4
   appearanceEase: 15
   punchEase: 19
-  moveDuration: 0.125
+  moveDuration: 0.15
   appearDuration: 0.3
   appearDelay: 0.8
-  colorChangingDuration: 0.3
-  punchDuration: 0.2
-  punchRatio: 0.2
+  colorChangingDuration: 0.33333334
+  punchDuration: 0.25
+  punchRatio: 0.15
+  themeChangingDuration: 0.33333334
   gridImage: {fileID: 82910389}
   gridSprites:
   - {fileID: 21300000, guid: ccfca1240c9831440bc5cb62026d2d56, type: 3}

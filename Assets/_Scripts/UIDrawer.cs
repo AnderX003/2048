@@ -17,6 +17,7 @@ namespace _Scripts
         [SerializeField] private float colorChangingDuration;
         [SerializeField] private float punchDuration;
         [SerializeField] private float punchRatio;
+        [SerializeField] private float themeChangingDuration;
         public float MoveDuration => moveDuration;
         public float AppearDelay => appearDelay;
 
@@ -132,13 +133,10 @@ namespace _Scripts
         {
             for (int i = 0; i < Materials.Length; i++)
             {
-                DOTween.To(
-                    () => Materials[i].color,
-                    x => Materials[i].color = x,
-                    Data.UIColors[Data.CurrentTheme, i], 1 / 3f);
+                Materials[i].DOColor(Data.UIColors[Data.CurrentTheme, i], themeChangingDuration);
             }
         }
-
+        
         public void SetTheme()
         {
             for (int i = 0; i < Materials.Length; i++)

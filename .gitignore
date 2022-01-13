@@ -22,7 +22,7 @@
 /Assets/GoogleMobileAds
 /Assets/GeneratedLocalRepo
 
-*.meta
+#*.meta
 *.sln
 *.csproj
 *.keystore
