@@ -26,7 +26,9 @@ namespace _Scripts
         [SerializeField] private Unit emptyUnit;
         [SerializeField] private GameObject UnitPrefab;
         
+
         private readonly Queue<Unit> unitsPool = new Queue<Unit>(70);
+        private readonly List<int[]> freePositions = new List<int[]>(33);
         private Unit[,] Units;
         private int Rows;
         private int Columns;
@@ -105,7 +107,7 @@ namespace _Scripts
                 for (int j = 0; j < Columns; j++)
                 {
                     if (GameManager.CurrentLocalData.GridState[sideLength - 3][i][j] != 0)
-                        CreateNewUnit(i, j, GameManager.CurrentLocalData.GridState[sideLength - 3][i][j], true);
+                        CreateNewUnit(i, j, GameManager.CurrentLocalData.GridState[sideLength - 3][i][j]);
                 }
             }
 
@@ -131,7 +133,7 @@ namespace _Scripts
             
             IsActive = true;
         }
-
+        
         private void CreateNewUnit(bool canCreateSeveralUnits = false)
         {
             if (UnitCounter == Rows * Columns) return;
@@ -140,25 +142,28 @@ namespace _Scripts
                 if (!CanCreateNewUnit) return;
                 CanCreateNewUnit = false;
             }
-
-            int positionX = -1;
-            int positionY = -1;
-            if (UnitCounter + 1 == SideLength * SideLength)
+            
+            int MaxPos = Data.MaxValue + 1;
+            int positionX;
+            int positionY;
+            if (UnitCounter > Rows * Columns / 2)
             {
-                for (int i = 0; i < Rows; i++)
+                for (int i = 0; i < MaxPos; i++)
                 {
-                    for (int j = 0; j < Columns; j++)
+                    for (int j = 0; j < MaxPos; j++)
                     {
-                        if (Units[i, j] != emptyUnit) continue;
-                        positionX = i;
-                        positionY = j;
-                        break;
+                        if (!Units[i, j].IsEmpty) continue;
+                        freePositions.Add(new[] { i, j });
                     }
                 }
+
+                int[] position = freePositions[Random.Range(0, freePositions.Count)];
+                positionX = position[0];
+                positionY = position[1];
+                freePositions.Clear();
             }
             else
             {
-                int MaxPos = Data.MaxValue + 1;
                 do
                 {
                     positionX = Random.Range(0, MaxPos);
@@ -192,14 +197,9 @@ namespace _Scripts
                 }));
         }
 
-        private void CreateNewUnit(int posX, int posY, int value, bool canCreateSeveralUnits = false)
+        private void CreateNewUnit(int posX, int posY, int value)
         {
             if (UnitCounter == Rows * Columns) return;
-            if (!canCreateSeveralUnits)
-            {
-                if (!CanCreateNewUnit) return;
-                CanCreateNewUnit = false;
-            }
 
             Unit unit;
             if (unitsPool.Count > 0)
@@ -629,7 +629,7 @@ namespace _Scripts
             {
                 for (int j = 0; j < Columns; j++)
                 {
-                    if (unitsState[i, j] != 0) CreateNewUnit(i, j, unitsState[i, j], true);
+                    if (unitsState[i, j] != 0) CreateNewUnit(i, j, unitsState[i, j]);
                 }
             }
 
