@@ -11,13 +11,13 @@ namespace _Scripts
     {
         [SerializeField] private RectTransform MapGameObject;
         [SerializeField] private GameManager GameManager;
-        [SerializeField] private UIDrawer drawer;
+        [SerializeField] private UnitsDrawer drawer;
         [SerializeField] private List<Unit> startUnits;
         [SerializeField] private Unit emptyUnit;
-        private readonly Queue<Unit> unitsPool = new Queue<Unit>();
+        private readonly Queue<Unit> unitsPool = new Queue<Unit>(70);
 
         private Unit[,] Units;
-        public UIDrawer Drawer => drawer;
+        public UnitsDrawer Drawer => drawer;
         private bool BestsWasChanged;
         private int Rows;
         private int Columns;
@@ -486,7 +486,12 @@ namespace _Scripts
                         break;
                 }
 
-                Drawer.UpdateUnitPosition(unit, true, unitsPool);
+                Drawer.UpdateUnitPosition(unit, () =>
+                {
+                    unitsPool.Enqueue(unit);
+                    Drawer.HideUnit(unit);
+                });
+                
                 nextUnit.Value *= 2;
                 nextUnit.WasChanged = true;
                 Drawer.IncrementUnit(nextUnit);

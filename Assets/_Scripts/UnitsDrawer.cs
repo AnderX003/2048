@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
@@ -5,7 +6,7 @@ using UnityEngine.UI;
 
 namespace _Scripts
 {
-    public class UIDrawer : MonoBehaviour
+    public class UnitsDrawer : MonoBehaviour
     {
         [SerializeField] private Vector3 hidePosition;
         [SerializeField] private Ease moveEase;
@@ -65,7 +66,7 @@ namespace _Scripts
                     .OnComplete(() => unit.AnimationQueue.Callback()));
         }
 
-        public void UpdateUnitPosition(Unit unit, bool beforeDeath = false, Queue<Unit> pool = null)
+        public void UpdateUnitPosition(Unit unit, Action onComplete = null)
         {
             DOTween.To(
                 () => unit.transform.localPosition,
@@ -75,9 +76,7 @@ namespace _Scripts
                     Data.CurrentLayout[unit.PositionX, unit.PositionY, 1]),
                 moveDuration).SetEase(moveEase).OnComplete(() =>
             {
-                if (!beforeDeath) return;
-                pool?.Enqueue(unit);
-                HideUnit(unit);
+                onComplete?.Invoke();
             });
         }
 
