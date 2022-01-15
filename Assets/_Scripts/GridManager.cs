@@ -9,23 +9,35 @@ namespace _Scripts
 {
     public class GridManager : MonoBehaviour
     {
+        #region FieldsAndProrerties
+        
+        public GridState State { get; set; }
+        public UnitsDrawer Drawer => drawer;
+        public int SideLength { get; private set; }
+        public bool IsActive { get; set; }
+        public bool MoveIsOver { get; private set; } = true;
+        public bool CanUndo { get; private set; }
+        private bool CanCreateNewUnit { get; set; }
+        
         [SerializeField] private RectTransform MapGameObject;
         [SerializeField] private GameManager GameManager;
         [SerializeField] private UnitsDrawer drawer;
-        [SerializeField] private List<Unit> startUnits;
+        [SerializeField] private Unit[] startUnits;
         [SerializeField] private Unit emptyUnit;
+        [SerializeField] private GameObject UnitPrefab;
+        
         private readonly Queue<Unit> unitsPool = new Queue<Unit>(70);
-
         private Unit[,] Units;
-        public UnitsDrawer Drawer => drawer;
-        private bool BestsWasChanged;
         private int Rows;
         private int Columns;
-        public int SideLength { get; private set; }
         private int UnitCounter;
-        public bool IsActive { get; set; }
-        public bool MoveIsOver { get; private set; } = true;
-        public GridState State { get; set; }
+        private int[,] LastUnitsState;
+        private int[,] LastLastUnitsState;
+        private int LastScore;
+        private bool BestsWasChanged;
+        private bool LastMove = true;
+        
+        #endregion
 
         #region Start Game and Creating new units
 
@@ -57,7 +69,7 @@ namespace _Scripts
             }
 
             UnitCounter = 0;
-            Drawer.SetMapImagesBySize(SideLength);
+            drawer.SetMapImagesBySize(SideLength);
             CreateNewUnit(true);
             CreateNewUnit(true);
             LastUnitsState = new int[Rows, Columns];
@@ -84,7 +96,7 @@ namespace _Scripts
                 }
             }
 
-            Drawer.SetMapImagesBySize(SideLength);
+            drawer.SetMapImagesBySize(SideLength);
             LastUnitsState = new int[Rows, Columns];
             LastLastUnitsState = new int[Rows, Columns];
             UnitCounter = 0;
@@ -113,14 +125,12 @@ namespace _Scripts
                 for (int j = 0; j < Columns; j++)
                 {
                     yield return null;
-                    if (Units[i, j] != emptyUnit) Drawer.DrawNewUnit(Units[i, j]);
+                    if (Units[i, j] != emptyUnit) drawer.DrawNewUnit(Units[i, j]);
                 }
             }
             
             IsActive = true;
         }
-
-        [SerializeField] private GameObject UnitPrefab;
 
         private void CreateNewUnit(bool canCreateSeveralUnits = false)
         {
@@ -164,7 +174,7 @@ namespace _Scripts
             else
             {
                 unit = Instantiate(UnitPrefab, MapGameObject).GetComponent<Unit>();
-                Drawer.HideUnit(unit);
+                drawer.HideUnit(unit);
             }
 
             Units[positionX, positionY] = unit;
@@ -173,11 +183,11 @@ namespace _Scripts
             unit.Value = Random.Range(0, 4) == 0 ? 4 : 2;
             UnitCounter++;
             MoveIsOver = false;
-            Drawer.SetNewUnitPosNScale(unit);
-            StartCoroutine(InvokeWithDelay(Drawer.MoveDuration * Drawer.AppearDelay,
+            drawer.SetNewUnitPosNScale(unit);
+            StartCoroutine(InvokeWithDelay(drawer.MoveDuration * drawer.AppearDelay,
                 () =>
                 {
-                    Drawer.DrawNewUnit(unit, false);
+                    drawer.DrawNewUnit(unit, false);
                     MoveIsOver = true;
                 }));
         }
@@ -199,7 +209,7 @@ namespace _Scripts
             else
             {
                 unit = Instantiate(UnitPrefab, MapGameObject).GetComponent<Unit>();
-                Drawer.HideUnit(unit);
+                drawer.HideUnit(unit);
             }
 
             Units[posX, posY] = unit;
@@ -208,7 +218,6 @@ namespace _Scripts
             unit.Value = value;
             UnitCounter++;
         }
-
 
         private static IEnumerator WaitForFrames(Action action, int frames)
         {
@@ -282,8 +291,6 @@ namespace _Scripts
                 checkedUnits[x, y - 1] == false &&
                 CheckTheEnd(Units[x, y - 1], checkedUnits);
         }
-
-        private bool CanCreateNewUnit { get; set; }
 
         #endregion
 
@@ -435,7 +442,7 @@ namespace _Scripts
                 }
 
                 Units[unit.PositionX, unit.PositionY] = unit;
-                Drawer.UpdateUnitPosition(unit);
+                drawer.UpdateUnitPosition(unit);
                 return true;
             }
 
@@ -466,7 +473,7 @@ namespace _Scripts
                 }
 
                 Units[unit.PositionX, unit.PositionY] = unit;
-                Drawer.UpdateUnitPosition(unit);
+                drawer.UpdateUnitPosition(unit);
                 return true;
             }
 
@@ -486,15 +493,15 @@ namespace _Scripts
                         break;
                 }
 
-                Drawer.UpdateUnitPosition(unit, () =>
+                drawer.UpdateUnitPosition(unit, () =>
                 {
                     unitsPool.Enqueue(unit);
-                    Drawer.HideUnit(unit);
+                    drawer.HideUnit(unit);
                 });
                 
                 nextUnit.Value *= 2;
                 nextUnit.WasChanged = true;
-                Drawer.IncrementUnit(nextUnit);
+                drawer.IncrementUnit(nextUnit);
                 Data.Score += nextUnit.Value;
                 GameManager.UpdateScoreText();
                 UnlockAchievement(nextUnit.Value, SideLength);
@@ -595,13 +602,6 @@ namespace _Scripts
 
         #region Undo logic
 
-        public bool CanUndo { get; set; }
-        private bool LastMove = true;
-
-        private int LastScore;
-        private int[,] LastUnitsState;
-        private int[,] LastLastUnitsState;
-
         private void SaveCellsState()
         {
             if (!LastMove) return;
@@ -637,7 +637,7 @@ namespace _Scripts
             {
                 for (int j = 0; j < Columns; j++)
                 {
-                    if (Units[i, j] != emptyUnit) Drawer.DrawNewUnit(Units[i, j]);
+                    if (Units[i, j] != emptyUnit) drawer.DrawNewUnit(Units[i, j]);
                 }
             }
             

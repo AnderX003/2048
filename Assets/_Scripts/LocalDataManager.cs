@@ -29,17 +29,14 @@ namespace _Scripts
 
         private static LocalData ReadLocalData()
         {
-            if (File.Exists(path))
-            {
-                BinaryFormatter formatter = new BinaryFormatter();
-                FileStream stream = new FileStream(path, FileMode.Open);
-                LocalData data = formatter.Deserialize(stream) as LocalData;
-                stream.Close();
+            if (!File.Exists(path)) return null;
+            
+            BinaryFormatter formatter = new BinaryFormatter();
+            FileStream stream = new FileStream(path, FileMode.Open);
+            LocalData data = formatter.Deserialize(stream) as LocalData;
+            stream.Close();
+            return data;
 
-                return data;
-            }
-
-            return null;
         }
     }
 }
