@@ -58,6 +58,7 @@ namespace _Scripts
                 else if (Input.GetKeyUp(KeyCode.UpArrow)) GridManager.Turn(Side.Up);
                 else if (Input.GetKeyUp(KeyCode.LeftArrow)) GridManager.Turn(Side.L);
                 else if (Input.GetKeyUp(KeyCode.DownArrow)) GridManager.Turn(Side.Down);
+                if (Input.GetKeyUp(KeyCode.Backspace)) Undo();
 #endif
             }
             if(Input.GetKeyDown(KeyCode.Escape)) Escape();
@@ -86,9 +87,8 @@ namespace _Scripts
             if (!CurrentLocalData.AdIsShowedInThisGame[GridManager.SideLength - 3])
             {
                 CurrentLocalData.AdIsShowedInThisGame[GridManager.SideLength - 3] = true;
-                StartCoroutine(
-                    GridManager.InvokeWithDelay(
-                        0.4f, adsController.ShowGameOverAd));
+                Wait.ForSeconds(GridManager.Drawer.DelayBeforeShowingAd, 
+                    adsController.ShowGameOverAd);
             }
             
             GridManager.SaveDataToCloudAndToLocalMemory();
@@ -113,10 +113,6 @@ namespace _Scripts
                         Application.Quit, 
                         () => GridManager.State = GridState.Pause, 
                         "Are you sure you want to quit the game?");
-                    /*messageBoxController.OpenNewMessageBox(
-                        Application.Quit,
-                        () => GridManager.State = previousState, 
-                        "Are you sure you want to quit the game?");*/
                     break;
                 case GridState.Quitting:
                     Application.Quit();
@@ -163,7 +159,7 @@ namespace _Scripts
             {
                 uiManager.SetGameOverAnimation("Out");
                 GridManager.State = GridState.Nothing;
-                StartCoroutine(GridManager.InvokeWithDelay(1 / 3f, ClearGrid));
+                Wait.ForSeconds(GridManager.Drawer.DelayAfterClearingGridAfterGameOver, GridManager.ClearGrid);
             }
             else
             {
@@ -173,19 +169,18 @@ namespace _Scripts
             }
         }
 
-        private void ClearGrid()
-        {
-            GridManager.ClearGrid();
-        }
-
         private void SetSizeAndStartGame(int sideLenght)
         {
             CurrentLocalData.LastGameMode = sideLenght;
-            
+
             if (FirstGameStarted)
+            {
                 GridManager.ClearGrid();
+            }
             else
+            {
                 FirstGameStarted = true;
+            }
             
             if (CurrentLocalData.StateIsSaved[sideLenght - 3])
             {

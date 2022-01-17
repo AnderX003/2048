@@ -1,9 +1,7 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace _Scripts
 {
@@ -17,7 +15,6 @@ namespace _Scripts
         public bool IsActive { get; set; }
         public bool MoveIsOver { get; private set; } = true;
         public bool CanUndo { get; private set; }
-        private bool CanCreateNewUnit { get; set; }
         
         [SerializeField] private RectTransform MapGameObject;
         [SerializeField] private GameManager GameManager;
@@ -37,7 +34,7 @@ namespace _Scripts
         private int[,] LastLastUnitsState;
         private int LastScore;
         private bool BestsWasChanged;
-        private bool LastMove = true;
+        private bool LastMoveWasDone = true;
         
         #endregion
 
@@ -54,72 +51,79 @@ namespace _Scripts
         public void InitializeGrid(int sideLength)
         {
             SideLength = sideLength;
-            Data.Score = 0;
-            GameManager.UpdateScoreText();
+            Rows = Columns = SideLength;
+            Units = GetNewEmptyGrid();
+            UnitCounter = 0;
             Data.MaxValue = SideLength - 1;
             Data.CurrentLayout = Data.layouts[SideLength];
-            IsActive = true;
+            Data.Score = 0;
             State = GridState.Game;
-            Rows = Columns = sideLength;
-            Units = new Unit[Rows, Columns];
-            for (int i = 0; i < Rows; i++)
-            {
-                for (int j = 0; j < Columns; j++)
-                {
-                    Units[i, j] = emptyUnit;
-                }
-            }
+            IsActive = true;
+            CanUndo = false;
 
-            UnitCounter = 0;
-            drawer.SetMapImagesBySize(SideLength);
-            CreateNewUnit(true);
-            CreateNewUnit(true);
+            CreateNewUnit();
+            CreateNewUnit();
             LastUnitsState = new int[Rows, Columns];
             LastLastUnitsState = new int[Rows, Columns];
-            GameManager.CurrentLocalData.StateIsSaved[sideLength - 3] = true;
+            GameManager.CurrentLocalData.StateIsSaved[SideLength - 3] = true;
+            
+            drawer.SetGridImageBySize(SideLength);
+            GameManager.UpdateScoreText();
         }
 
         public void InitializeGridFromLocalData(int sideLength)
         {
             SideLength = sideLength;
-            Data.Score = GameManager.CurrentLocalData.LastScores[sideLength - 3];
-            GameManager.UpdateScoreText();
+            Rows = Columns = SideLength;
+            Units = GetNewEmptyGrid();
+            UnitCounter = 0;
             Data.MaxValue = SideLength - 1;
             Data.CurrentLayout = Data.layouts[SideLength];
+            Data.Score = GameManager.CurrentLocalData.LastScores[SideLength - 3];
             State = GridState.Game;
-            Rows = Columns = sideLength;
-            Units = new Unit[Rows, Columns];
-            for (int i = 0; i < Rows; i++)
-            {
-                for (int j = 0; j < Columns; j++)
-                {
-                    Units[i, j] = emptyUnit;
-                }
-            }
-
-            drawer.SetMapImagesBySize(SideLength);
+            CanUndo = false;
+            
+            CreateUnitsFromState(GameManager.CurrentLocalData.GridState[SideLength - 3]);
             LastUnitsState = new int[Rows, Columns];
             LastLastUnitsState = new int[Rows, Columns];
-            UnitCounter = 0;
+            
+            drawer.SetGridImageBySize(SideLength);
+
+            Wait.ForFrames(Drawer.FramesBeforeDrawingUnits, () =>
+            {
+                StartCoroutine(DrawUnitsWithDelay());
+            });
+            
+            GameManager.UpdateScoreText();
+        }
+
+        private Unit[,] GetNewEmptyGrid()
+        {
+            var units = new Unit[Rows, Columns];
             for (int i = 0; i < Rows; i++)
             {
                 for (int j = 0; j < Columns; j++)
                 {
-                    if (GameManager.CurrentLocalData.GridState[sideLength - 3][i][j] != 0)
-                        CreateNewUnit(new Vector2Int(i, j), GameManager.CurrentLocalData.GridState[sideLength - 3][i][j]);
+                    units[i, j] = emptyUnit;
                 }
             }
 
-            CanUndo = false;
-            StartCoroutine(
-                WaitForFrames(() =>
-                {
-                    StartCoroutine(
-                        DrawUnits());
-                }, 5));
+            return units;
         }
 
-        private IEnumerator DrawUnits()
+        private void CreateUnitsFromState(int[][] state)
+        {
+            for (int i = 0; i < Rows; i++)
+            {
+                for (int j = 0; j < Columns; j++)
+                {
+                    if (state[i][j] == 0) continue;
+                    CreateNewUnit(new Vector2Int(i, j), state[i][j]);
+                }
+            }
+        }
+
+        private IEnumerator DrawUnitsWithDelay()
         {
             for (int i = 0; i < Rows; i++)
             {
@@ -133,17 +137,28 @@ namespace _Scripts
             IsActive = true;
         }
         
-        private void CreateNewUnit(bool canCreateSeveralUnits = false)
+        private void CreateNewUnit()
         {
-            if (UnitCounter == Rows * Columns) return;
-            if (!canCreateSeveralUnits)
-            {
-                if (!CanCreateNewUnit) return;
-                CanCreateNewUnit = false;
-            }
+            Unit unit = GetUnitFromPool();
+            unit.Position = GenerateRandomFreePosition();
+            unit.Value = Random.Range(0, 4) == 0 ? 4 : 2;
+            Units[unit.Position.x, unit.Position.y] = unit;
+            UnitCounter++;
             
-            int MaxPos = Data.MaxValue + 1;
+            drawer.SetNewUnitPosNScale(unit);
+            MoveIsOver = false;
+            Wait.ForSeconds(drawer.MoveDuration * Drawer.AppearDelay, () =>
+            {
+                drawer.DrawNewUnit(unit, false);
+                MoveIsOver = true;
+            });
+        }
+
+        private Vector2Int GenerateRandomFreePosition()
+        {
             Vector2Int position = default;
+            int MaxPos = Data.MaxValue + 1;
+            
             if (UnitCounter > Rows * Columns / 2)
             {
                 for (int i = 0; i < MaxPos; i++)
@@ -167,64 +182,50 @@ namespace _Scripts
                 } while (!Units[position.x, position.y].IsEmpty);
             }
 
-            Unit unit;
+            return position;
+        }
+
+        private Unit GetUnitFromPool()
+        {
             if (unitsPool.Count > 0)
             {
-                unit = unitsPool.Dequeue();
+                return unitsPool.Dequeue();
             }
             else
             {
-                unit = Instantiate(UnitPrefab, MapGameObject).GetComponent<Unit>();
+                Unit unit = Instantiate(UnitPrefab, MapGameObject).GetComponent<Unit>();
                 drawer.HideUnit(unit);
+                return unit;
             }
-
-            Units[position.x, position.y] = unit;
-            unit.Position = position;
-            unit.Value = Random.Range(0, 4) == 0 ? 4 : 2;
-            UnitCounter++;
-            MoveIsOver = false;
-            drawer.SetNewUnitPosNScale(unit);
-            StartCoroutine(InvokeWithDelay(drawer.MoveDuration * drawer.AppearDelay,
-                () =>
-                {
-                    drawer.DrawNewUnit(unit, false);
-                    MoveIsOver = true;
-                }));
         }
-
+        
         private void CreateNewUnit(Vector2Int position, int value)
         {
-            if (UnitCounter == Rows * Columns) return;
-
-            Unit unit;
-            if (unitsPool.Count > 0)
-            {
-                unit = unitsPool.Dequeue();
-            }
-            else
-            {
-                unit = Instantiate(UnitPrefab, MapGameObject).GetComponent<Unit>();
-                drawer.HideUnit(unit);
-            }
-
-            Units[position.x, position.y] = unit;
+            Unit unit = GetUnitFromPool();
             unit.Position = position;
             unit.Value = value;
+            Units[unit.Position.x, unit.Position.y] = unit;
             UnitCounter++;
-        }
-
-        private static IEnumerator WaitForFrames(Action action, int frames)
-        {
-            for (int i = 0; i < frames; i++)
-            {
-                yield return null;
-            }
-
-            action();
         }
 
         #endregion
 
+        public void ClearGrid()
+        {
+            for (int i = 0; i < Rows; i++)
+            {
+                for (int j = 0; j < Columns; j++)
+                {
+                    if (Units[i, j].IsEmpty) continue;
+                    unitsPool.Enqueue(Units[i, j]);
+                    drawer.HideUnit(Units[i, j]);
+                    Units[i, j] = emptyUnit;
+                }
+            }
+
+            UnitCounter = 0;
+        }
+        
         #region Game Over Logic
 
         private async void CheckTheEnd()
@@ -292,63 +293,11 @@ namespace _Scripts
 
         public void Turn(Side side)
         {
-            CanCreateNewUnit = true;
             SaveCellsState();
 
-            LastMove = false;
-            switch (side)
-            {
-                case Side.R:
-                    for (int x = Rows - 1; x >= 0; x--)
-                    {
-                        for (int y = 0; y < Columns; y++)
-                        {
-                            if (Units[x, y].IsEmpty) continue;
-                            Units[x, y].WasChanged = false;
-                            LastMove |= MoveUnit(Units[x, y], side);
-                        }
-                    }
+            LastMoveWasDone = MoveUnitsInSideOrder(side);
 
-                    break;
-                case Side.Up: 
-                    for (int y = Columns - 1; y >= 0; y--)
-                    {
-                        for (int x = 0; x < Rows; x++)
-                        {
-                            if (Units[x, y].IsEmpty) continue;
-                            Units[x, y].WasChanged = false;
-                            LastMove |= MoveUnit(Units[x, y], side);
-                        }
-                    }
-
-                    break;
-                case Side.L: 
-                    for (int x = 0; x < Rows; x++)
-                    {
-                        for (int y = 0; y < Columns; y++)
-                        {
-                            if (Units[x, y].IsEmpty) continue;
-                            Units[x, y].WasChanged = false;
-                            LastMove |= MoveUnit(Units[x, y], side);
-                        }
-                    }
-
-                    break;
-                case Side.Down: 
-                    for (int y = 0; y < Columns; y++)
-                    {
-                        for (int x = 0; x < Rows; x++)
-                        {
-                            if (Units[x, y].IsEmpty) continue;
-                            Units[x, y].WasChanged = false;
-                            LastMove |= MoveUnit(Units[x, y], side);
-                        }
-                    }
-
-                    break;
-            }
-
-            if (!LastMove) return;
+            if (!LastMoveWasDone) return;
             CanUndo = true;
             CreateNewUnit();
             if (UnitCounter == SideLength * SideLength) CheckTheEnd();
@@ -361,150 +310,262 @@ namespace _Scripts
             }
         }
 
-        public static IEnumerator InvokeWithDelay(float delay, Action action)
+        private bool MoveUnitsInSideOrder(Side side)
         {
-            if (action == null)
-                yield break;
-            yield return new WaitForSeconds(delay);
-            action();
-        }
-
-        private bool MoveUnit(Unit unit, Side side)
-        {
-            Unit nextUnit = emptyUnit;
+            bool lastMoveWasDone = false;
             switch (side)
             {
                 case Side.R:
-                    if (unit.Position.x == Rows - 1) return false;
-                    for (int x = unit.Position.x + 1; x < Rows; x++)
+                    for (int x = Rows - 1; x >= 0; x--)
                     {
-                        if (Units[x, unit.Position.y].IsEmpty) continue;
-                        nextUnit = Units[x, unit.Position.y];
-                        break;
+                        for (int y = 0; y < Columns; y++)
+                        {
+                            if (Units[x, y].IsEmpty) continue;
+                            Units[x, y].WasChanged = false;
+                            lastMoveWasDone |= MoveUnit(Units[x, y], side);
+                        }
                     }
 
                     break;
-                case Side.Up:
-                    if (unit.Position.y == Columns - 1) return false;
-                    for (int y = unit.Position.y + 1; y < Columns; y++)
+                case Side.Up: 
+                    for (int y = Columns - 1; y >= 0; y--)
                     {
-                        if (Units[unit.Position.x, y].IsEmpty) continue;
-                        nextUnit = Units[unit.Position.x, y];
-                        break;
+                        for (int x = 0; x < Rows; x++)
+                        {
+                            if (Units[x, y].IsEmpty) continue;
+                            Units[x, y].WasChanged = false;
+                            lastMoveWasDone |= MoveUnit(Units[x, y], side);
+                        }
                     }
 
                     break;
-                case Side.L:
-                    if (unit.Position.x == 0) return false;
-                    for (int x = unit.Position.x - 1; x >= 0; x--)
+                case Side.L: 
+                    for (int x = 0; x < Rows; x++)
                     {
-                        if (Units[x, unit.Position.y].IsEmpty) continue;
-                        nextUnit = Units[x, unit.Position.y];
-                        break;
+                        for (int y = 0; y < Columns; y++)
+                        {
+                            if (Units[x, y].IsEmpty) continue;
+                            Units[x, y].WasChanged = false;
+                            lastMoveWasDone |= MoveUnit(Units[x, y], side);
+                        }
                     }
 
                     break;
-                case Side.Down:
-                    if (unit.Position.y == 0) return false;
-                    for (int y = unit.Position.y - 1; y >= 0; y--)
+                case Side.Down: 
+                    for (int y = 0; y < Columns; y++)
                     {
-                        if (Units[unit.Position.x, y].IsEmpty) continue;
-                        nextUnit = Units[unit.Position.x, y];
-                        break;
+                        for (int x = 0; x < Rows; x++)
+                        {
+                            if (Units[x, y].IsEmpty) continue;
+                            Units[x, y].WasChanged = false;
+                            lastMoveWasDone |= MoveUnit(Units[x, y], side);
+                        }
                     }
 
                     break;
             }
 
-            if (nextUnit.IsEmpty)
-            {
-                Units[unit.Position.x, unit.Position.y] = emptyUnit;
-                switch (side)
-                {
-                    case Side.R:
-                        unit.Position = new Vector2Int(Rows - 1, unit.Position.y);
-                        break;
-                    case Side.Up:
-                        unit.Position = new Vector2Int(unit.Position.x, Columns - 1);
-                        break;
-                    case Side.L:
-                        unit.Position = new Vector2Int(0, unit.Position.y);
-                        break;
-                    case Side.Down:
-                        unit.Position = new Vector2Int(unit.Position.x, 0);
-                        break;
-                }
+            return lastMoveWasDone;
+        }
+        
+        private bool MoveUnit(Unit unit, Side side)
+        {
+            if (CheckIfAtExtremePosition(unit, side)) return false;
+            Unit nextUnit = FindNextUnit(unit, side);
 
-                Units[unit.Position.x, unit.Position.y] = unit;
+            if (nextUnit.IsEmpty) 
+            {
+                MoveToExtremePosition(unit, side);
                 drawer.UpdateUnitPosition(unit);
                 return true;
             }
 
             if (nextUnit.Value != unit.Value || nextUnit.WasChanged)
             {
-                switch (side)
+                if (CheckIfCanPushToNextUnit(unit, nextUnit, side))
                 {
-                    case Side.R:
-                        if (nextUnit.Position.x == unit.Position.x + 1) return false;
-                        Units[unit.Position.x, unit.Position.y] = emptyUnit;
-                        unit.Position = new Vector2Int(nextUnit.Position.x - 1, unit.Position.y);
-                        break;
-                    case Side.Up:
-                        if (nextUnit.Position.y == unit.Position.y + 1) return false;
-                        Units[unit.Position.x, unit.Position.y] = emptyUnit;
-                        unit.Position = new Vector2Int(unit.Position.x, nextUnit.Position.y - 1);
-                        break;
-                    case Side.L:
-                        if (nextUnit.Position.x == unit.Position.x - 1) return false;
-                        Units[unit.Position.x, unit.Position.y] = emptyUnit;
-                        unit.Position = new Vector2Int(nextUnit.Position.x + 1, unit.Position.y);
-                        break;
-                    case Side.Down:
-                        if (nextUnit.Position.y == unit.Position.y - 1) return false;
-                        Units[unit.Position.x, unit.Position.y] = emptyUnit;
-                        unit.Position = new Vector2Int(unit.Position.x, nextUnit.Position.y + 1);
-                        break;
+                    PushToNextUnit(unit, nextUnit, side);
+                    drawer.UpdateUnitPosition(unit);
+                    return true;
                 }
 
-                Units[unit.Position.x, unit.Position.y] = unit;
-                drawer.UpdateUnitPosition(unit);
-                return true;
+                return false;
             }
 
             if (nextUnit.Value == unit.Value)
             {
-                Units[unit.Position.x, unit.Position.y] = emptyUnit;
-                UnitCounter--;
-                switch (side)
-                {
-                    case Side.R:
-                    case Side.L:
-                        unit.Position = new Vector2Int(nextUnit.Position.x, unit.Position.y);
-                        break;
-                    case Side.Up:
-                    case Side.Down:
-                        unit.Position = new Vector2Int(unit.Position.x, nextUnit.Position.y);
-                        break;
-                }
+                JoinUnits(unit, nextUnit, side);
 
                 drawer.UpdateUnitPosition(unit, () =>
                 {
                     unitsPool.Enqueue(unit);
                     drawer.HideUnit(unit);
                 });
-                
-                nextUnit.Value *= 2;
-                nextUnit.WasChanged = true;
+
                 drawer.IncrementUnit(nextUnit);
+
                 Data.Score += nextUnit.Value;
                 GameManager.UpdateScoreText();
                 UnlockAchievement(nextUnit.Value, SideLength);
+
                 return true;
             }
 
             return false;
         }
 
+        private bool CheckIfAtExtremePosition(Unit unit, Side side)
+        {
+            switch (side)
+            {
+                case Side.R:
+                    if (unit.Position.x == Rows - 1) return true;
+                    break;
+                case Side.Up:
+                    if (unit.Position.y == Columns - 1) return true;
+                    break;
+                case Side.L:
+                    if (unit.Position.x == 0) return true;
+                    break;
+                case Side.Down:
+                    if (unit.Position.y == 0) return true;
+                    break;
+            }
+
+            return false;
+        }
+        
+        private Unit FindNextUnit(Unit unit, Side side)
+        {
+            switch (side)
+            {
+                case Side.R:
+                    for (int x = unit.Position.x + 1; x < Rows; x++)
+                    {
+                        if (Units[x, unit.Position.y].IsEmpty) continue;
+                        return Units[x, unit.Position.y];
+                    }
+
+                    break;
+                case Side.Up:
+                    for (int y = unit.Position.y + 1; y < Columns; y++)
+                    {
+                        if (Units[unit.Position.x, y].IsEmpty) continue;
+                        return Units[unit.Position.x, y];
+                    }
+
+                    break;
+                case Side.L:
+                    for (int x = unit.Position.x - 1; x >= 0; x--)
+                    {
+                        if (Units[x, unit.Position.y].IsEmpty) continue;
+                        return Units[x, unit.Position.y];
+                    }
+
+                    break;
+                case Side.Down:
+                    for (int y = unit.Position.y - 1; y >= 0; y--)
+                    {
+                        if (Units[unit.Position.x, y].IsEmpty) continue;
+                        return Units[unit.Position.x, y];
+                    }
+
+                    break;
+            }
+
+            return emptyUnit;
+        }
+
+        private void MoveToExtremePosition(Unit unit, Side side)
+        {
+            Units[unit.Position.x, unit.Position.y] = emptyUnit;
+            switch (side)
+            {
+                case Side.R:
+                    unit.Position = new Vector2Int(Rows - 1, unit.Position.y);
+                    break;
+                case Side.Up:
+                    unit.Position = new Vector2Int(unit.Position.x, Columns - 1);
+                    break;
+                case Side.L:
+                    unit.Position = new Vector2Int(0, unit.Position.y);
+                    break;
+                case Side.Down:
+                    unit.Position = new Vector2Int(unit.Position.x, 0);
+                    break;
+            }
+
+            Units[unit.Position.x, unit.Position.y] = unit;
+        }
+
+        private bool CheckIfCanPushToNextUnit(Unit unit, Unit nextUnit, Side side)
+        {
+            switch (side)
+            {
+                case Side.R:
+                    if (nextUnit.Position.x == unit.Position.x + 1) return false;
+                    break;
+                case Side.Up:
+                    if (nextUnit.Position.y == unit.Position.y + 1) return false;
+                    break;
+                case Side.L:
+                    if (nextUnit.Position.x == unit.Position.x - 1) return false;
+                    break;
+                case Side.Down:
+                    if (nextUnit.Position.y == unit.Position.y - 1) return false;
+                    break;
+            }
+
+            return true;
+        }
+
+        private void PushToNextUnit(Unit unit, Unit nextUnit, Side side)
+        {
+            switch (side)
+            {
+                case Side.R:
+                    Units[unit.Position.x, unit.Position.y] = emptyUnit;
+                    unit.Position = new Vector2Int(nextUnit.Position.x - 1, unit.Position.y);
+                    break;
+                case Side.Up:
+                    Units[unit.Position.x, unit.Position.y] = emptyUnit;
+                    unit.Position = new Vector2Int(unit.Position.x, nextUnit.Position.y - 1);
+                    break;
+                case Side.L:
+                    Units[unit.Position.x, unit.Position.y] = emptyUnit;
+                    unit.Position = new Vector2Int(nextUnit.Position.x + 1, unit.Position.y);
+                    break;
+                case Side.Down:
+                    Units[unit.Position.x, unit.Position.y] = emptyUnit;
+                    unit.Position = new Vector2Int(unit.Position.x, nextUnit.Position.y + 1);
+                    break;
+            }
+
+            Units[unit.Position.x, unit.Position.y] = unit;
+        }
+
+        private void JoinUnits(Unit unit, Unit nextUnit, Side side)
+        {
+            Units[unit.Position.x, unit.Position.y] = emptyUnit;
+            UnitCounter--;
+            switch (side)
+            {
+                case Side.R:
+                case Side.L:
+                    unit.Position = new Vector2Int(nextUnit.Position.x, unit.Position.y);
+                    break;
+                case Side.Up:
+                case Side.Down:
+                    unit.Position = new Vector2Int(unit.Position.x, nextUnit.Position.y);
+                    break;
+            }
+                
+            nextUnit.Value *= 2;
+            nextUnit.WasChanged = true;
+        }
+        
+        #endregion
+        
         private void OnApplicationFocus(bool hasFocus)
         {
             if (!hasFocus) SaveDataToCloudAndToLocalMemory();
@@ -592,13 +653,11 @@ namespace _Scripts
             GPGSManager.AddScoreToLeaderboard(id, value);
         }
 
-        #endregion
-
         #region Undo logic
 
         private void SaveCellsState()
         {
-            if (!LastMove) return;
+            if (!LastMoveWasDone) return;
             LastLastUnitsState = (int[,])LastUnitsState.Clone();
 
             for (int i = 0; i < Rows; i++)
@@ -615,45 +674,40 @@ namespace _Scripts
         public void Undo()
         {
             MoveIsOver = false;
-            StartCoroutine(InvokeWithDelay(0.1f, () => { MoveIsOver = true; }));
-            var unitsState = LastMove ? LastUnitsState : LastLastUnitsState;
+            var unitsState = LastMoveWasDone ? LastUnitsState : LastLastUnitsState;
+            
             ClearGrid();
-
-            for (int i = 0; i < Rows; i++)
-            {
-                for (int j = 0; j < Columns; j++)
-                {
-                    if (unitsState[i, j] != 0) CreateNewUnit(new Vector2Int(i, j), unitsState[i, j]);
-                }
-            }
-
-            for (int i = 0; i < Rows; i++)
-            {
-                for (int j = 0; j < Columns; j++)
-                {
-                    if (Units[i, j] != emptyUnit) drawer.DrawNewUnit(Units[i, j]);
-                }
-            }
+            CreateUnitsFromState(unitsState);
+            DrawUnits();
             
             Data.Score = LastScore;
             GameManager.UpdateScoreText();
             CanUndo = false;
+            Wait.ForSeconds(Drawer.DelayAfterUndo, () => MoveIsOver = true);
         }
 
-        public void ClearGrid()
+        private void CreateUnitsFromState(int[,] state)
         {
             for (int i = 0; i < Rows; i++)
             {
                 for (int j = 0; j < Columns; j++)
                 {
-                    if (Units[i, j].IsEmpty) continue;
-                    unitsPool.Enqueue(Units[i, j]);
-                    drawer.HideUnit(Units[i, j]);
-                    Units[i, j] = emptyUnit;
+                    if (state[i, j] == 0) continue;
+                    CreateNewUnit(new Vector2Int(i, j), state[i, j]);
                 }
             }
+        }
 
-            UnitCounter = 0;
+        private void DrawUnits()
+        {
+            for (int i = 0; i < Rows; i++)
+            {
+                for (int j = 0; j < Columns; j++)
+                {
+                    if (Units[i, j] == emptyUnit) continue;
+                    drawer.DrawNewUnit(Units[i, j]);
+                }
+            }
         }
 
         #endregion

@@ -18,10 +18,6 @@ namespace _Scripts
         [SerializeField] private Animator gamePanelAnimator;
         [SerializeField] private Animator MenuAnimator;
 
-        private static readonly int In = Animator.StringToHash("In");
-        private static readonly int Out = Animator.StringToHash("Out");
-        private static readonly int Any = Animator.StringToHash("Any");
-
         #region Buttons
 
         public void ChangeGameModeButton(bool plus)

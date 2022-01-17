@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,8 +18,17 @@ namespace _Scripts
         [SerializeField] private float punchDuration;
         [SerializeField] private float punchRatio;
         [SerializeField] private float themeChangingDuration;
+        [SerializeField] private float delayAfterUndo;
+        [SerializeField] private float delayAfterClearingGridAfterGameOver;
+        [SerializeField] private float delayBeforeShowingAd;
+        [SerializeField] private int framesBeforeDrawingUnits;
+        
         public float MoveDuration => moveDuration;
         public float AppearDelay => appearDelay;
+        public float DelayAfterUndo => delayAfterUndo;
+        public float DelayAfterClearingGridAfterGameOver => delayAfterClearingGridAfterGameOver;
+        public float DelayBeforeShowingAd => delayBeforeShowingAd;
+        public int FramesBeforeDrawingUnits => framesBeforeDrawingUnits;
 
         #region Unit drawing
 
@@ -117,7 +125,7 @@ namespace _Scripts
         [SerializeField] private Image gridImage;
         [SerializeField] private Sprite[] gridSprites;
 
-        public void SetMapImagesBySize(int side)
+        public void SetGridImageBySize(int side)
         {
             gridImage.sprite = gridSprites[side - 3];
         }
