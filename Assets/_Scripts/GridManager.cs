@@ -406,7 +406,7 @@ namespace _Scripts
 
                 Data.Score += nextUnit.Value;
                 GameManager.UpdateScoreText();
-                UnlockAchievement(nextUnit.Value, SideLength);
+                GPGSManager.UnlockAchievement(nextUnit.Value, SideLength);
 
                 return true;
             }
@@ -576,7 +576,7 @@ namespace _Scripts
             SaveGridStateToLocalData();
             LocalDataManager.WriteLocalData(GameManager.CurrentLocalData);
             if (!BestsWasChanged) return;
-            AddScoreToLeaderboard(SideLength, GameManager.CurrentLocalData.BestScores[SideLength - 3]);
+            GPGSManager.AddScoreToLeaderboard(SideLength, GameManager.CurrentLocalData.BestScores[SideLength - 3]);
             GPGSManager.WriteDataToCloud(GameManager.dataName,
                 Converter.ToByteArray(GameManager.CurrentLocalData.BestScores));
         }
@@ -592,66 +592,6 @@ namespace _Scripts
             }
         }
 
-        private static void UnlockAchievement(int value, int side)
-        {
-            string id = side switch
-            {
-                3 => value switch
-                {
-                    256 => GPGSIds.achievement_256_at_33,
-                    512 => GPGSIds.achievement_512_at_33,
-                    1024 => GPGSIds.achievement_1024_at_33,
-                    _ => null
-                },
-                4 => value switch
-                {
-                    512 => GPGSIds.achievement_512_at_44,
-                    1024 => GPGSIds.achievement_1024_at_44,
-                    2048 => GPGSIds.achievement_2048_at_44,
-                    4096 => GPGSIds.achievement_4096_at_44,
-                    8192 => GPGSIds.achievement_8192_at_44,
-                    16384 => GPGSIds.achievement_16384_at_44,
-                    _ => null
-                },
-                5 => value switch
-                {
-                    2048 => GPGSIds.achievement_2048_at_55,
-                    _ => null
-                },
-                6 => value switch
-                {
-                    2048 => GPGSIds.achievement_2048_at_66,
-                    _ => null
-                },
-                7 => value switch
-                {
-                    2048 => GPGSIds.achievement_2048_at_77,
-                    _ => null
-                },
-                8 => value switch
-                {
-                    2048 => GPGSIds.achievement_2048_at_88,
-                    _ => null
-                },
-                _ => null
-            };
-            GPGSManager.UnlockAchievement(id);
-        }
-
-        private static void AddScoreToLeaderboard(int side, int value)
-        {
-            string id = side switch
-            {
-                3 => GPGSIds.leaderboard_33_leaderboard,
-                4 => GPGSIds.leaderboard_44_leaderboard,
-                5 => GPGSIds.leaderboard_55_leaderboard,
-                6 => GPGSIds.leaderboard_66_leaderboard,
-                7 => GPGSIds.leaderboard_77_leaderboard,
-                8 => GPGSIds.leaderboard_88_leaderboard,
-                _ => null
-            };
-            GPGSManager.AddScoreToLeaderboard(id, value);
-        }
 
         #region Undo logic
 

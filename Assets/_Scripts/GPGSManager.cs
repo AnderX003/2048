@@ -52,29 +52,90 @@
 
                 #region Achievements
 
-                public static void UnlockAchievement(string id)
+                public static void ShowAchievementsUI()
+                {
+                    Social.ShowAchievementsUI();
+                }
+
+                private static void UnlockAchievement(string id)
                 {
                     if (id == null) return;
                     Social.ReportProgress(id, 100, success => { });
                 }
-
-                public static void ShowAchievementsUI()
+                
+                public static void UnlockAchievement(int value, int side)
                 {
-                    Social.ShowAchievementsUI();
+                    string id = side switch
+                    {
+                        3 => value switch
+                        {
+                            256 => GPGSIds.achievement_256_at_33,
+                            512 => GPGSIds.achievement_512_at_33,
+                            1024 => GPGSIds.achievement_1024_at_33,
+                            _ => null
+                        },
+                        4 => value switch
+                        {
+                            512 => GPGSIds.achievement_512_at_44,
+                            1024 => GPGSIds.achievement_1024_at_44,
+                            2048 => GPGSIds.achievement_2048_at_44,
+                            4096 => GPGSIds.achievement_4096_at_44,
+                            8192 => GPGSIds.achievement_8192_at_44,
+                            16384 => GPGSIds.achievement_16384_at_44,
+                            _ => null
+                        },
+                        5 => value switch
+                        {
+                            2048 => GPGSIds.achievement_2048_at_55,
+                            _ => null
+                        },
+                        6 => value switch
+                        {
+                            2048 => GPGSIds.achievement_2048_at_66,
+                            _ => null
+                        },
+                        7 => value switch
+                        {
+                            2048 => GPGSIds.achievement_2048_at_77,
+                            _ => null
+                        },
+                        8 => value switch
+                        {
+                            2048 => GPGSIds.achievement_2048_at_88,
+                            _ => null
+                        },
+                        _ => null
+                    };
+                    UnlockAchievement(id);
                 }
 
                 #endregion
 
                 #region Leaderboards
 
-                public static void AddScoreToLeaderboard(string id, long score)
+                public static void ShowLeaderboardUI()
+                {
+                    Social.ShowLeaderboardUI();
+                }
+
+                private static void AddScoreToLeaderboard(string id, long score)
                 {
                     Social.ReportScore(score, id, success => { });
                 }
 
-                public static void ShowLeaderboardUI()
+                public static void AddScoreToLeaderboard(int side, int value)
                 {
-                    Social.ShowLeaderboardUI();
+                    string id = side switch
+                    {
+                        3 => GPGSIds.leaderboard_33_leaderboard,
+                        4 => GPGSIds.leaderboard_44_leaderboard,
+                        5 => GPGSIds.leaderboard_55_leaderboard,
+                        6 => GPGSIds.leaderboard_66_leaderboard,
+                        7 => GPGSIds.leaderboard_77_leaderboard,
+                        8 => GPGSIds.leaderboard_88_leaderboard,
+                        _ => null
+                    };
+                    AddScoreToLeaderboard(id, value);
                 }
 
                 #endregion
