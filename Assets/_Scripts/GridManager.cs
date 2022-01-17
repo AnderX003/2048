@@ -28,7 +28,7 @@ namespace _Scripts
         
 
         private readonly Queue<Unit> unitsPool = new Queue<Unit>(70);
-        private readonly List<int[]> freePositions = new List<int[]>(33);
+        private readonly List<Vector2Int> freePositions = new List<Vector2Int>(33);
         private Unit[,] Units;
         private int Rows;
         private int Columns;
@@ -86,7 +86,6 @@ namespace _Scripts
             GameManager.UpdateScoreText();
             Data.MaxValue = SideLength - 1;
             Data.CurrentLayout = Data.layouts[SideLength];
-            //IsActive = true;
             State = GridState.Game;
             Rows = Columns = sideLength;
             Units = new Unit[Rows, Columns];
@@ -107,7 +106,7 @@ namespace _Scripts
                 for (int j = 0; j < Columns; j++)
                 {
                     if (GameManager.CurrentLocalData.GridState[sideLength - 3][i][j] != 0)
-                        CreateNewUnit(i, j, GameManager.CurrentLocalData.GridState[sideLength - 3][i][j]);
+                        CreateNewUnit(new Vector2Int(i, j), GameManager.CurrentLocalData.GridState[sideLength - 3][i][j]);
                 }
             }
 
@@ -144,8 +143,7 @@ namespace _Scripts
             }
             
             int MaxPos = Data.MaxValue + 1;
-            int positionX;
-            int positionY;
+            Vector2Int position = default;
             if (UnitCounter > Rows * Columns / 2)
             {
                 for (int i = 0; i < MaxPos; i++)
@@ -153,22 +151,20 @@ namespace _Scripts
                     for (int j = 0; j < MaxPos; j++)
                     {
                         if (!Units[i, j].IsEmpty) continue;
-                        freePositions.Add(new[] { i, j });
+                        freePositions.Add(new Vector2Int(i, j));
                     }
                 }
 
-                int[] position = freePositions[Random.Range(0, freePositions.Count)];
-                positionX = position[0];
-                positionY = position[1];
+                position = freePositions[Random.Range(0, freePositions.Count)];
                 freePositions.Clear();
             }
             else
             {
                 do
                 {
-                    positionX = Random.Range(0, MaxPos);
-                    positionY = Random.Range(0, MaxPos);
-                } while (!Units[positionX, positionY].IsEmpty);
+                    position.x = Random.Range(0, MaxPos);
+                    position.y = Random.Range(0, MaxPos);
+                } while (!Units[position.x, position.y].IsEmpty);
             }
 
             Unit unit;
@@ -182,9 +178,8 @@ namespace _Scripts
                 drawer.HideUnit(unit);
             }
 
-            Units[positionX, positionY] = unit;
-            unit.PositionX = positionX;
-            unit.PositionY = positionY;
+            Units[position.x, position.y] = unit;
+            unit.Position = position;
             unit.Value = Random.Range(0, 4) == 0 ? 4 : 2;
             UnitCounter++;
             MoveIsOver = false;
@@ -197,7 +192,7 @@ namespace _Scripts
                 }));
         }
 
-        private void CreateNewUnit(int posX, int posY, int value)
+        private void CreateNewUnit(Vector2Int position, int value)
         {
             if (UnitCounter == Rows * Columns) return;
 
@@ -212,9 +207,8 @@ namespace _Scripts
                 drawer.HideUnit(unit);
             }
 
-            Units[posX, posY] = unit;
-            unit.PositionX = posX;
-            unit.PositionY = posY;
+            Units[position.x, position.y] = unit;
+            unit.Position = position;
             unit.Value = value;
             UnitCounter++;
         }
@@ -252,8 +246,8 @@ namespace _Scripts
 
         private bool CheckTheEnd(Unit startUnit, bool[,] checkedUnits)
         {
-            int x = startUnit.PositionX;
-            int y = startUnit.PositionY;
+            int x = startUnit.Position.x;
+            int y = startUnit.Position.y;
             if (x != Rows - 1 &&
                 checkedUnits[x + 1, y] == false &&
                 Units[x + 1, y].Value == startUnit.Value
@@ -304,7 +298,7 @@ namespace _Scripts
             LastMove = false;
             switch (side)
             {
-                case Side.R: //→
+                case Side.R:
                     for (int x = Rows - 1; x >= 0; x--)
                     {
                         for (int y = 0; y < Columns; y++)
@@ -381,41 +375,41 @@ namespace _Scripts
             switch (side)
             {
                 case Side.R:
-                    if (unit.PositionX == Rows - 1) return false;
-                    for (int x = unit.PositionX + 1; x < Rows; x++)
+                    if (unit.Position.x == Rows - 1) return false;
+                    for (int x = unit.Position.x + 1; x < Rows; x++)
                     {
-                        if (Units[x, unit.PositionY].IsEmpty) continue;
-                        nextUnit = Units[x, unit.PositionY];
+                        if (Units[x, unit.Position.y].IsEmpty) continue;
+                        nextUnit = Units[x, unit.Position.y];
                         break;
                     }
 
                     break;
                 case Side.Up:
-                    if (unit.PositionY == Columns - 1) return false;
-                    for (int y = unit.PositionY + 1; y < Columns; y++)
+                    if (unit.Position.y == Columns - 1) return false;
+                    for (int y = unit.Position.y + 1; y < Columns; y++)
                     {
-                        if (Units[unit.PositionX, y].IsEmpty) continue;
-                        nextUnit = Units[unit.PositionX, y];
+                        if (Units[unit.Position.x, y].IsEmpty) continue;
+                        nextUnit = Units[unit.Position.x, y];
                         break;
                     }
 
                     break;
                 case Side.L:
-                    if (unit.PositionX == 0) return false;
-                    for (int x = unit.PositionX - 1; x >= 0; x--)
+                    if (unit.Position.x == 0) return false;
+                    for (int x = unit.Position.x - 1; x >= 0; x--)
                     {
-                        if (Units[x, unit.PositionY].IsEmpty) continue;
-                        nextUnit = Units[x, unit.PositionY];
+                        if (Units[x, unit.Position.y].IsEmpty) continue;
+                        nextUnit = Units[x, unit.Position.y];
                         break;
                     }
 
                     break;
                 case Side.Down:
-                    if (unit.PositionY == 0) return false;
-                    for (int y = unit.PositionY - 1; y >= 0; y--)
+                    if (unit.Position.y == 0) return false;
+                    for (int y = unit.Position.y - 1; y >= 0; y--)
                     {
-                        if (Units[unit.PositionX, y].IsEmpty) continue;
-                        nextUnit = Units[unit.PositionX, y];
+                        if (Units[unit.Position.x, y].IsEmpty) continue;
+                        nextUnit = Units[unit.Position.x, y];
                         break;
                     }
 
@@ -424,24 +418,24 @@ namespace _Scripts
 
             if (nextUnit.IsEmpty)
             {
-                Units[unit.PositionX, unit.PositionY] = emptyUnit;
+                Units[unit.Position.x, unit.Position.y] = emptyUnit;
                 switch (side)
                 {
                     case Side.R:
-                        unit.PositionX = Rows - 1;
+                        unit.Position = new Vector2Int(Rows - 1, unit.Position.y);
                         break;
                     case Side.Up:
-                        unit.PositionY = Columns - 1;
+                        unit.Position = new Vector2Int(unit.Position.x, Columns - 1);
                         break;
                     case Side.L:
-                        unit.PositionX = 0;
+                        unit.Position = new Vector2Int(0, unit.Position.y);
                         break;
                     case Side.Down:
-                        unit.PositionY = 0;
+                        unit.Position = new Vector2Int(unit.Position.x, 0);
                         break;
                 }
 
-                Units[unit.PositionX, unit.PositionY] = unit;
+                Units[unit.Position.x, unit.Position.y] = unit;
                 drawer.UpdateUnitPosition(unit);
                 return true;
             }
@@ -451,45 +445,45 @@ namespace _Scripts
                 switch (side)
                 {
                     case Side.R:
-                        if (nextUnit.PositionX == unit.PositionX + 1) return false;
-                        Units[unit.PositionX, unit.PositionY] = emptyUnit;
-                        unit.PositionX = nextUnit.PositionX - 1;
+                        if (nextUnit.Position.x == unit.Position.x + 1) return false;
+                        Units[unit.Position.x, unit.Position.y] = emptyUnit;
+                        unit.Position = new Vector2Int(nextUnit.Position.x - 1, unit.Position.y);
                         break;
                     case Side.Up:
-                        if (nextUnit.PositionY == unit.PositionY + 1) return false;
-                        Units[unit.PositionX, unit.PositionY] = emptyUnit;
-                        unit.PositionY = nextUnit.PositionY - 1;
+                        if (nextUnit.Position.y == unit.Position.y + 1) return false;
+                        Units[unit.Position.x, unit.Position.y] = emptyUnit;
+                        unit.Position = new Vector2Int(unit.Position.x, nextUnit.Position.y - 1);
                         break;
                     case Side.L:
-                        if (nextUnit.PositionX == unit.PositionX - 1) return false;
-                        Units[unit.PositionX, unit.PositionY] = emptyUnit;
-                        unit.PositionX = nextUnit.PositionX + 1;
+                        if (nextUnit.Position.x == unit.Position.x - 1) return false;
+                        Units[unit.Position.x, unit.Position.y] = emptyUnit;
+                        unit.Position = new Vector2Int(nextUnit.Position.x + 1, unit.Position.y);
                         break;
                     case Side.Down:
-                        if (nextUnit.PositionY == unit.PositionY - 1) return false;
-                        Units[unit.PositionX, unit.PositionY] = emptyUnit;
-                        unit.PositionY = nextUnit.PositionY + 1;
+                        if (nextUnit.Position.y == unit.Position.y - 1) return false;
+                        Units[unit.Position.x, unit.Position.y] = emptyUnit;
+                        unit.Position = new Vector2Int(unit.Position.x, nextUnit.Position.y + 1);
                         break;
                 }
 
-                Units[unit.PositionX, unit.PositionY] = unit;
+                Units[unit.Position.x, unit.Position.y] = unit;
                 drawer.UpdateUnitPosition(unit);
                 return true;
             }
 
             if (nextUnit.Value == unit.Value)
             {
-                Units[unit.PositionX, unit.PositionY] = emptyUnit;
+                Units[unit.Position.x, unit.Position.y] = emptyUnit;
                 UnitCounter--;
                 switch (side)
                 {
                     case Side.R:
                     case Side.L:
-                        unit.PositionX = nextUnit.PositionX;
+                        unit.Position = new Vector2Int(nextUnit.Position.x, unit.Position.y);
                         break;
                     case Side.Up:
                     case Side.Down:
-                        unit.PositionY = nextUnit.PositionY;
+                        unit.Position = new Vector2Int(unit.Position.x, nextUnit.Position.y);
                         break;
                 }
 
@@ -629,7 +623,7 @@ namespace _Scripts
             {
                 for (int j = 0; j < Columns; j++)
                 {
-                    if (unitsState[i, j] != 0) CreateNewUnit(i, j, unitsState[i, j]);
+                    if (unitsState[i, j] != 0) CreateNewUnit(new Vector2Int(i, j), unitsState[i, j]);
                 }
             }
 
@@ -652,12 +646,10 @@ namespace _Scripts
             {
                 for (int j = 0; j < Columns; j++)
                 {
-                    if (!Units[i, j].IsEmpty)
-                    {
-                        unitsPool.Enqueue(Units[i, j]);
-                        drawer.HideUnit(Units[i, j]);
-                        Units[i, j] = emptyUnit;
-                    }
+                    if (Units[i, j].IsEmpty) continue;
+                    unitsPool.Enqueue(Units[i, j]);
+                    drawer.HideUnit(Units[i, j]);
+                    Units[i, j] = emptyUnit;
                 }
             }
 

@@ -28,8 +28,8 @@ namespace _Scripts
         {
             unit.transform.localScale = Vector3.zero;
             unit.UnitRectTransform.localPosition = new Vector3(
-                Data.CurrentLayout[unit.PositionX, unit.PositionY, 0],
-                Data.CurrentLayout[unit.PositionX, unit.PositionY, 1]);
+                Data.CurrentLayout[unit.Position.x, unit.Position.y, 0],
+                Data.CurrentLayout[unit.Position.x, unit.Position.y, 1]);
         }
 
         public void DrawNewUnit(Unit unit, bool setNewUnitPosNScale = true)
@@ -40,8 +40,8 @@ namespace _Scripts
                 unit.transform.localScale = Vector3.zero;
                 //position
                 unit.UnitRectTransform.localPosition = new Vector3(
-                    Data.CurrentLayout[unit.PositionX, unit.PositionY, 0],
-                    Data.CurrentLayout[unit.PositionX, unit.PositionY, 1]);
+                    Data.CurrentLayout[unit.Position.x, unit.Position.y, 0],
+                    Data.CurrentLayout[unit.Position.x, unit.Position.y, 1]);
             }
             
             float scale = Data.CellSizes[Data.MaxValue + 1];
@@ -72,8 +72,8 @@ namespace _Scripts
                 () => unit.transform.localPosition,
                 x => unit.transform.localPosition = x,
                 new Vector3(
-                    Data.CurrentLayout[unit.PositionX, unit.PositionY, 0],
-                    Data.CurrentLayout[unit.PositionX, unit.PositionY, 1]),
+                    Data.CurrentLayout[unit.Position.x, unit.Position.y, 0],
+                    Data.CurrentLayout[unit.Position.x, unit.Position.y, 1]),
                 moveDuration).SetEase(moveEase).OnComplete(() =>
             {
                 onComplete?.Invoke();

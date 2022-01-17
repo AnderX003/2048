@@ -6,8 +6,7 @@ namespace _Scripts
     public class Unit : MonoBehaviour
     {
         public int Value { get; set; }
-        public int PositionX {get; set; }
-        public int PositionY { get; set; }
+        public Vector2Int Position { get; set; }
         public bool WasChanged { get; set; }
         public UnitAnimationQueue AnimationQueue { get; } = new UnitAnimationQueue();
         public bool IsEmpty => isEmpty;
