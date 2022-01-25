@@ -28,6 +28,11 @@ namespace _Scripts
             instance.StartCoroutine(WaitForSeconds(seconds, action));
         }
 
+        public static void ForCondition(Func<bool> condition, Action action)
+        {
+            instance.StartCoroutine(WaitForCondition(condition, action));
+        }
+
         private static IEnumerator WaitForFrame(Action action)
         {
             yield return null;
@@ -49,6 +54,16 @@ namespace _Scripts
             if (action == null)
                 yield break;
             yield return new WaitForSeconds(seconds);
+            action();
+        }
+
+        private static IEnumerator WaitForCondition(Func<bool> condition, Action action)
+        {
+            while (!condition())
+            {
+                yield return null;
+            }
+
             action();
         }
     }

@@ -87,7 +87,7 @@ namespace _Scripts
             if (!CurrentLocalData.AdIsShowedInThisGame[GridManager.SideLength - 3])
             {
                 CurrentLocalData.AdIsShowedInThisGame[GridManager.SideLength - 3] = true;
-                Wait.ForSeconds(GridManager.Drawer.DelayBeforeShowingAd, 
+                Wait.ForSeconds(GridManager.Drawer.TimingsConfig.delayBeforeShowingAd, 
                     adsController.ShowGameOverAd);
             }
             
@@ -159,7 +159,7 @@ namespace _Scripts
             {
                 uiManager.SetGameOverAnimation("Out");
                 GridManager.State = GridState.Nothing;
-                Wait.ForSeconds(GridManager.Drawer.DelayAfterClearingGridAfterGameOver, GridManager.ClearGrid);
+                Wait.ForSeconds(GridManager.Drawer.TimingsConfig.delayAfterClearingGridAfterGameOver, GridManager.ClearGrid);
             }
             else
             {

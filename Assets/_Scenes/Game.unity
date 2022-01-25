@@ -7264,21 +7264,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c895484f95a9fb479c9955ec157373b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  <TimingsConfig>k__BackingField: {fileID: 11400000, guid: 0034b7d3491f003438328e38b2f77db0, type: 2}
   hidePosition: {x: -200, y: -200, z: 0}
-  moveEase: 4
-  appearanceEase: 15
-  punchEase: 19
-  moveDuration: 0.15
-  appearDuration: 0.3
-  appearDelay: 0.8
-  colorChangingDuration: 0.33333334
-  punchDuration: 0.25
-  punchRatio: 0.15
-  themeChangingDuration: 0.33333334
-  delayAfterUndo: 0.1
-  delayAfterClearingGridAfterGameOver: 0.33333334
-  delayBeforeShowingAd: 1
-  framesBeforeDrawingUnits: 5
   gridImage: {fileID: 82910389}
   gridSprites:
   - {fileID: 21300000, guid: ccfca1240c9831440bc5cb62026d2d56, type: 3}

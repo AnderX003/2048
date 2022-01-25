@@ -7,28 +7,8 @@ namespace _Scripts
 {
     public class UnitsDrawer : MonoBehaviour
     {
+        [field: SerializeField] public TimingsConfiguration TimingsConfig { get; private set; }
         [SerializeField] private Vector3 hidePosition;
-        [SerializeField] private Ease moveEase;
-        [SerializeField] private Ease appearanceEase;
-        [SerializeField] private Ease punchEase;
-        [SerializeField] private float moveDuration;
-        [SerializeField] private float appearDuration;
-        [SerializeField] private float appearDelay;
-        [SerializeField] private float colorChangingDuration;
-        [SerializeField] private float punchDuration;
-        [SerializeField] private float punchRatio;
-        [SerializeField] private float themeChangingDuration;
-        [SerializeField] private float delayAfterUndo;
-        [SerializeField] private float delayAfterClearingGridAfterGameOver;
-        [SerializeField] private float delayBeforeShowingAd;
-        [SerializeField] private int framesBeforeDrawingUnits;
-        
-        public float MoveDuration => moveDuration;
-        public float AppearDelay => appearDelay;
-        public float DelayAfterUndo => delayAfterUndo;
-        public float DelayAfterClearingGridAfterGameOver => delayAfterClearingGridAfterGameOver;
-        public float DelayBeforeShowingAd => delayBeforeShowingAd;
-        public int FramesBeforeDrawingUnits => framesBeforeDrawingUnits;
 
         #region Unit drawing
 
@@ -69,8 +49,8 @@ namespace _Scripts
                 () => DOTween.To(
                         () => unit.transform.localScale,
                         x => unit.transform.localScale = x,
-                        Vector3.one, appearDuration)
-                    .SetEase(appearanceEase)
+                        Vector3.one, TimingsConfig.appearDuration)
+                    .SetEase(TimingsConfig.appearanceEase)
                     .OnComplete(() => unit.AnimationQueue.Callback()));
         }
 
@@ -82,7 +62,7 @@ namespace _Scripts
                 new Vector3(
                     Data.CurrentLayout[unit.Position.x, unit.Position.y, 0],
                     Data.CurrentLayout[unit.Position.x, unit.Position.y, 1]),
-                moveDuration).SetEase(moveEase).OnComplete(() =>
+                TimingsConfig.moveDuration).SetEase(TimingsConfig.moveEase).OnComplete(() =>
             {
                 onComplete?.Invoke();
             });
@@ -96,7 +76,7 @@ namespace _Scripts
                 () => unit.UnitImage.color, 
                 x => unit.UnitImage.color = x, 
                 Data.GetColorByValue(unit.Value), 
-                colorChangingDuration);
+                TimingsConfig.colorChangingDuration);
         }
 
         public void IncrementUnit(Unit unit)
@@ -106,8 +86,8 @@ namespace _Scripts
             /*unit.transform.DOPunchScale(Vector3.one * 0.15f, 0.2f, 0, 0).SetEase(punchEase);*/
             unit.AnimationQueue.AddAnimation(
                 () => unit.transform
-                    .DOPunchScale(Vector3.one * punchRatio, punchDuration, 0, 0)
-                    .SetEase(punchEase)
+                    .DOPunchScale(Vector3.one * TimingsConfig.punchRatio, TimingsConfig.punchDuration, 0, 0)
+                    .SetEase(TimingsConfig.punchEase)
                     .OnComplete(() => unit.AnimationQueue.Callback()));
 
             UpdateUnitColorAndText(unit);
@@ -140,7 +120,7 @@ namespace _Scripts
         {
             for (int i = 0; i < Materials.Length; i++)
             {
-                Materials[i].DOColor(Data.UIColors[Data.CurrentTheme, i], themeChangingDuration);
+                Materials[i].DOColor(Data.UIColors[Data.CurrentTheme, i], TimingsConfig.themeChangingDuration);
             }
         }
         

@@ -89,7 +89,7 @@ namespace _Scripts
             
             drawer.SetGridImageBySize(SideLength);
 
-            Wait.ForFrames(Drawer.FramesBeforeDrawingUnits, () =>
+            Wait.ForFrames(Drawer.TimingsConfig.framesBeforeDrawingUnits, () =>
             {
                 StartCoroutine(DrawUnitsWithDelay());
             });
@@ -147,7 +147,7 @@ namespace _Scripts
             
             drawer.SetNewUnitPosNScale(unit);
             MoveIsOver = false;
-            Wait.ForSeconds(drawer.MoveDuration * Drawer.AppearDelay, () =>
+            Wait.ForSeconds(drawer.TimingsConfig.moveDuration * Drawer.TimingsConfig.appearDelay, () =>
             {
                 drawer.DrawNewUnit(unit, false);
                 MoveIsOver = true;
@@ -623,7 +623,7 @@ namespace _Scripts
             Data.Score = LastScore;
             GameManager.UpdateScoreText();
             CanUndo = false;
-            Wait.ForSeconds(Drawer.DelayAfterUndo, () => MoveIsOver = true);
+            Wait.ForSeconds(Drawer.TimingsConfig.delayAfterUndo, () => MoveIsOver = true);
         }
 
         private void CreateUnitsFromState(int[,] state)
